@@ -27,8 +27,8 @@ import { styles } from "./FeedScreen.styles";
 export function FeedScreen() {
   const navigation = useNavigation();
   const tabBarHeight = useBottomTabBarHeight();
-  const { colors, scheme } = useTheme();
-  const listBg = scheme === "dark" ? colors.background : "#F4F6F9";
+  const { colors, semantic } = useTheme();
+  const listBg = semantic.feedListBackground;
   const listBottomPad = tabBarHeight + 72;
 
   const communityQuery = useQuery({

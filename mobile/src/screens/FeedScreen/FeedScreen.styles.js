@@ -15,17 +15,17 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: spacing.sm,
+    marginBottom: spacing.sm + 2,
     paddingHorizontal: spacing.xs,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: -0.2,
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.4,
   },
   syncing: {
-    fontSize: 13,
-    fontWeight: "500",
+    fontSize: 12.5,
+    fontWeight: "600",
   },
   separator: {
     height: spacing.md,
@@ -33,24 +33,24 @@ export const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: spacing.md,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
     ...Platform.select({
       ios: {
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.35,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
       },
       android: {
-        elevation: 8,
+        elevation: 10,
       },
     }),
   },
   fabPressed: {
-    transform: [{ scale: 0.96 }],
-    opacity: 0.92,
+    transform: [{ scale: 0.94 }],
+    opacity: 0.9,
   },
 });

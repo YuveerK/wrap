@@ -3,110 +3,126 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
 
-/**
- * @param {Object} props
- * @param {string} [props.communityName]
- * @param {number} [props.postCount]
- * @param {number} [props.memberCount]
- */
 export function FeedHeader({ communityName, postCount = 0, memberCount = 0 }) {
-  const { colors, scheme } = useTheme();
-  const heroBg = scheme === "dark" ? colors.surface : "#FFF7ED";
+  const { colors, semantic, isDark } = useTheme();
 
   return (
-    <View style={styles.wrap}>
-      <View style={[styles.hero, { backgroundColor: heroBg }]}>
-        <View style={[styles.heroIcon, { backgroundColor: colors.primary }]}>
-          <Ionicons name="people" size={22} color="#FFFFFF" />
+    <View style={styles.container}>
+      <View style={styles.brand}>
+        <View style={[styles.iconBadge, { backgroundColor: colors.primary }]}>
+          <Ionicons name="home" size={20} color="#FFF" />
         </View>
-        <View style={styles.heroText}>
+        <View style={styles.brandText}>
           <Text style={[styles.eyebrow, { color: colors.primary }]}>
             Your neighborhood
           </Text>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+          <Text
+            style={[styles.communityName, { color: colors.text }]}
+            numberOfLines={1}
+          >
             {communityName ?? "Community"}
           </Text>
         </View>
       </View>
 
-      <View style={styles.stats}>
-        <StatPill
-          icon="newspaper-outline"
-          label={`${postCount} ${postCount === 1 ? "post" : "posts"}`}
-          colors={colors}
+      <View
+        style={[
+          styles.statsRow,
+          { borderTopColor: semantic.footerDivider },
+        ]}
+      >
+        <View style={styles.stat}>
+          <Ionicons
+            name="document-text-outline"
+            size={14}
+            color={colors.textMuted}
+          />
+          <Text style={[styles.statNum, { color: colors.text }]}>
+            {postCount}
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.textMuted }]}>
+            {postCount === 1 ? "post" : "posts"}
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.statDivider,
+            { backgroundColor: isDark ? "#3A4560" : "#DDE2ED" },
+          ]}
         />
-        <StatPill
-          icon="people-outline"
-          label={`${memberCount} ${memberCount === 1 ? "member" : "members"}`}
-          colors={colors}
-        />
+        <View style={styles.stat}>
+          <Ionicons name="people-outline" size={14} color={colors.textMuted} />
+          <Text style={[styles.statNum, { color: colors.text }]}>
+            {memberCount}
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.textMuted }]}>
+            {memberCount === 1 ? "member" : "members"}
+          </Text>
+        </View>
       </View>
     </View>
   );
 }
 
-/** @param {Object} props */
-function StatPill({ icon, label, colors }) {
-  return (
-    <View style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Ionicons name={icon} size={14} color={colors.textMuted} />
-      <Text style={[styles.pillText, { color: colors.textMuted }]}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  wrap: {
+  container: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.md + 4,
+    paddingBottom: spacing.lg,
     gap: spacing.md,
   },
-  hero: {
+  brand: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: 20,
   },
-  heroIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+  iconBadge: {
+    width: 54,
+    height: 54,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
   },
-  heroText: {
+  brandText: {
     flex: 1,
     gap: 2,
   },
   eyebrow: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "700",
-    letterSpacing: 0.6,
+    letterSpacing: 1,
     textTransform: "uppercase",
   },
-  title: {
-    fontSize: 22,
+  communityName: {
+    fontSize: 26,
     fontWeight: "800",
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
+    lineHeight: 32,
   },
-  stats: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  pill: {
+  statsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
   },
-  pillText: {
-    fontSize: 13,
-    fontWeight: "600",
+  stat: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  statNum: {
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  statLabel: {
+    fontSize: 13.5,
+    fontWeight: "500",
+  },
+  statDivider: {
+    width: 1,
+    height: 14,
+    borderRadius: 1,
   },
 });
