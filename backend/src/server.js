@@ -4,8 +4,9 @@ import { logger } from "./libraries/logger.js";
 import { prisma } from "./libraries/prisma.js";
 
 const app = buildApp();
-const server = app.listen(config.port, () => {
-  logger.info({ port: config.port }, "server up");
+const server = app.listen(config.port, "0.0.0.0", () => {
+  const { port } = server.address();
+  logger.info({ port }, "server up");
 });
 
 let shuttingDown = false;

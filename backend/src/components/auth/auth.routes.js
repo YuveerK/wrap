@@ -2,7 +2,8 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import * as authController from "./auth.controller.js";
 import { validateBody } from "../../middleware/validate.js";
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "./auth.schemas.js";
+import { authenticate } from "../../middleware/authenticate.js";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, refreshSchema } from "./auth.schemas.js";
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -17,8 +18,9 @@ const router = Router();
 router.post("/register", authLimiter, validateBody(registerSchema), authController.register);
 router.get("/verify/:token", authController.verifyEmail);
 router.post("/login", authLimiter, validateBody(loginSchema), authController.login);
-router.post("/refresh", authController.refresh);
-router.post("/logout", authController.logout);
+router.get("/me", authenticate, authController.me);
+router.post("/refresh", validateBody(refreshSchema), authController.refresh);
+router.post("/logout", validateBody(refreshSchema), authController.logout);
 router.post("/forgot-password", authLimiter, validateBody(forgotPasswordSchema), authController.forgotPassword);
 router.post("/reset-password/:token", authLimiter, validateBody(resetPasswordSchema), authController.resetPassword);
 

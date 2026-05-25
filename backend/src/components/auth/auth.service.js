@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import * as authRepo from "./auth.repository.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../../libraries/jwt.js";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../../libraries/mailer.js";
-import { AppError, ConflictError } from "../../libraries/errors.js";
+import { AppError, ConflictError, NotFoundError } from "../../libraries/errors.js";
 
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -62,9 +62,15 @@ export async function login(email, password) {
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
   await authRepo.saveRefreshToken(user.id, refreshToken, expiresAt);
 
-  const { password: _, verifyToken: __, verifyTokenExpiry: ___, resetToken: ____, resetTokenExpiry: _____, ...safeUser } = user;
-
+  const safeUser = await authRepo.findUserById(user.id);
   return { accessToken, refreshToken, user: safeUser };
+}
+
+export async function getMe(userId) {
+  const user = await authRepo.findUserById(userId);
+  if (!user) throw new NotFoundError("User");
+  if (!user.isActive) throw new AppError("Your account has been deactivated", { status: 403, code: "ACCOUNT_INACTIVE" });
+  return user;
 }
 
 export async function refresh(token) {

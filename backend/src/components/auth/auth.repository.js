@@ -1,6 +1,29 @@
 import { createHash } from "node:crypto";
 import { prisma } from "../../libraries/prisma.js";
 
+export const SAFE_USER_SELECT = {
+  id: true,
+  email: true,
+  phone: true,
+  firstName: true,
+  lastName: true,
+  streetAddress: true,
+  postalCode: true,
+  profilePhoto: true,
+  role: true,
+  isVerified: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+export async function findUserById(id) {
+  return await prisma.user.findUnique({
+    where: { id },
+    select: SAFE_USER_SELECT,
+  });
+}
+
 export async function findUserByEmail(email) {
   return await prisma.user.findUnique({ where: { email } });
 }

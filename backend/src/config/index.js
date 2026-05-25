@@ -31,3 +31,13 @@ export const config = Object.freeze({
   backendUrl: process.env.BACKEND_URL ?? "http://localhost:3000",
   appName: process.env.APP_NAME ?? "Wrap Community",
 });
+
+if (
+  config.env !== "production" &&
+  (config.backendUrl.includes("localhost") || config.backendUrl.includes("127.0.0.1"))
+) {
+  console.warn(
+    "[config] BACKEND_URL is localhost — email verify/reset links will not work on a phone. " +
+      "Set BACKEND_URL=http://YOUR_LAN_IP:3000 in backend/.env (same IP as Expo, e.g. 192.168.0.106).",
+  );
+}
