@@ -95,8 +95,13 @@ if (__DEV__) {
   }
 }
 
+const mediaBaseUrl =
+  process.env.EXPO_PUBLIC_MEDIA_URL?.trim()?.replace(/\/$/, "") ||
+  resolvedApiUrl.replace(/\/api\/?$/, "");
+
 export const config = {
   apiUrl: resolvedApiUrl,
+  mediaBaseUrl,
   sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
   isDev: __DEV__,
 };

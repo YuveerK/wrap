@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-} from "react-native";
+import { Pressable, Text } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -13,12 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as authApi from "@/api/auth";
 import { Button } from "@/components/Button/Button";
 import { FormField } from "@/components/FormField/FormField";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView/KeyboardAwareScrollView";
 import { Screen } from "@/components/Screen/Screen";
 import { getAuthErrorMessage } from "@/lib/authErrors";
 import { resetPasswordSchema } from "@/lib/validation/authSchemas";
 import { SCREENS } from "@/navigation/params";
 import { useTheme } from "@/theme";
-import { scrollContentBelowHeader, scrollViewStyle } from "@/theme/screenLayout";
+import { scrollContentBelowHeader } from "@/theme/screenLayout";
 import { spacing } from "@/theme/spacing";
 
 /**
@@ -79,19 +74,12 @@ export function ResetPasswordScreen() {
 
   return (
     <Screen edges={["bottom"]} padded={false}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <KeyboardAwareScrollView
+        contentContainerStyle={[
+          scrollContentBelowHeader,
+          { flexGrow: 1, justifyContent: "center" },
+        ]}
       >
-        <ScrollView
-          style={scrollViewStyle}
-          contentContainerStyle={[
-            scrollContentBelowHeader,
-            { flexGrow: 1, justifyContent: "center" },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-        >
           <Text style={{ fontSize: 28, fontWeight: "700", color: colors.text }}>
             Reset password
           </Text>
@@ -142,8 +130,7 @@ export function ResetPasswordScreen() {
               Back to login
             </Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

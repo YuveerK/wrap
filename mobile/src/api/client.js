@@ -86,10 +86,45 @@ async function request(path, init = {}, retried = false) {
   return res.json();
 }
 
+/**
+ * @param {string} path
+ * @param {FormData} formData
+ * @param {boolean} [retried]
+ */
+async function postMultipart(path, formData, retried = false) {
+  const token = await getAuthToken();
+  const res = await fetch(`${config.apiUrl}${path}`, {
+    method: "POST",
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: formData,
+  });
+
+  if (res.status === 401 && !retried && !shouldSkipRefresh(path)) {
+    const refreshed = await tryRefreshTokens();
+    if (refreshed) return postMultipart(path, formData, true);
+    await clearAuthTokens();
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(
+      res.status,
+      body.error?.code ?? "UNKNOWN",
+      body.error?.message ?? res.statusText,
+    );
+  }
+
+  if (res.status === 204) return null;
+  return res.json();
+}
+
 export const apiClient = {
   get: (path) => request(path),
   post: (path, body) =>
     request(path, { method: "POST", body: JSON.stringify(body) }),
+  postMultipart,
   patch: (path, body) =>
     request(path, { method: "PATCH", body: JSON.stringify(body) }),
   delete: (path) => request(path, { method: "DELETE" }),

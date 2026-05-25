@@ -4,6 +4,8 @@
  * @typedef {Object} ScreenParams
  * @property {undefined} Feed
  * @property {undefined} CreatePost
+ * @property {{ postId: number }} PostDetail
+ * @property {{ postId: number, parentId?: number, quoteAuthorName?: string, quoteBody?: string }} PostComment
  * @property {undefined} IssuesList
  * @property {{ issueId: number }} IssueDetail
  * @property {undefined} CreateIssue
@@ -18,6 +20,8 @@
 export const SCREENS = /** @type {const} */ ({
   Feed: "Feed",
   CreatePost: "CreatePost",
+  PostDetail: "PostDetail",
+  PostComment: "PostComment",
   IssuesList: "IssuesList",
   IssueDetail: "IssueDetail",
   CreateIssue: "CreateIssue",

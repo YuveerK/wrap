@@ -1,18 +1,12 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { TextInput } from "@/components/TextInput/TextInput";
 import { useRoute } from "@react-navigation/native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as issuesApi from "@/api/issues";
 import { ApiError } from "@/api/client";
 import { Button } from "@/components/Button/Button";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView/KeyboardAwareScrollView";
 import { ErrorView } from "@/components/ErrorView/ErrorView";
 import { Loading } from "@/components/Loading/Loading";
 import { Screen } from "@/components/Screen/Screen";
@@ -25,7 +19,7 @@ import {
   statusLabels,
 } from "@/lib/issues";
 import { useTheme } from "@/theme";
-import { scrollContentBelowHeader, scrollViewStyle } from "@/theme/screenLayout";
+import { scrollContentBelowHeader } from "@/theme/screenLayout";
 import { styles } from "./IssueDetailScreen.styles";
 
 export function IssueDetailScreen() {
@@ -116,11 +110,7 @@ export function IssueDetailScreen() {
 
   return (
     <Screen edges={["bottom"]} padded={false}>
-      <KeyboardAvoidingView
-        style={scrollViewStyle}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView contentContainerStyle={scrollContentBelowHeader}>
+      <KeyboardAwareScrollView contentContainerStyle={scrollContentBelowHeader}>
           <Text style={[styles.category, { color: colors.textMuted }]}>
             {categoryLabels[issue.category] ?? issue.category}
           </Text>
@@ -208,8 +198,7 @@ export function IssueDetailScreen() {
               {actionError}
             </Text>
           ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

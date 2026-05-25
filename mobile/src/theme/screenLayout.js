@@ -6,7 +6,7 @@ export const scrollViewStyle = { flex: 1 };
 
 const contentBase = {
   paddingHorizontal: spacing.md,
-  paddingBottom: spacing.xl,
+  paddingBottom: spacing.xl * 2,
 };
 
 /** Form screens shown under a stack header — minimal top gap. */

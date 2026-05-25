@@ -9,6 +9,8 @@ export const linking = {
           FeedTab: {
             screens: {
               [SCREENS.Feed]: "feed",
+              [SCREENS.PostDetail]: "feed/:postId",
+              [SCREENS.PostComment]: "feed/:postId/comment",
               [SCREENS.CreatePost]: "feed/new",
             },
           },

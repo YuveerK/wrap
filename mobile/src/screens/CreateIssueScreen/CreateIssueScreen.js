@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
@@ -15,12 +8,13 @@ import * as issuesApi from "@/api/issues";
 import { ApiError } from "@/api/client";
 import { Button } from "@/components/Button/Button";
 import { FormField } from "@/components/FormField/FormField";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView/KeyboardAwareScrollView";
 import { Screen } from "@/components/Screen/Screen";
 import { ISSUE_CATEGORIES, categoryLabels } from "@/lib/issues";
 import { createIssueSchema } from "@/lib/validation/issueSchemas";
 import { SCREENS } from "@/navigation/params";
 import { useTheme } from "@/theme";
-import { scrollContentBelowHeader, scrollViewStyle } from "@/theme/screenLayout";
+import { scrollContentBelowHeader } from "@/theme/screenLayout";
 import { styles } from "./CreateIssueScreen.styles";
 
 export function CreateIssueScreen() {
@@ -64,14 +58,7 @@ export function CreateIssueScreen() {
 
   return (
     <Screen edges={["bottom"]} padded={false}>
-      <KeyboardAvoidingView
-        style={scrollViewStyle}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={scrollContentBelowHeader}
-          keyboardShouldPersistTaps="handled"
-        >
+      <KeyboardAwareScrollView contentContainerStyle={scrollContentBelowHeader}>
           <Text style={[styles.label, { color: colors.text }]}>Category</Text>
           <Controller
             control={control}
@@ -138,8 +125,7 @@ export function CreateIssueScreen() {
             onPress={handleSubmit((values) => mutation.mutate(values))}
             disabled={mutation.isPending}
           />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

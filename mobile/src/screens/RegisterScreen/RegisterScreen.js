@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-} from "react-native";
+import { Pressable, Switch, Text } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -15,6 +8,7 @@ import { ApiError } from "@/api/client";
 import * as authApi from "@/api/auth";
 import { Button } from "@/components/Button/Button";
 import { FormField } from "@/components/FormField/FormField";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView/KeyboardAwareScrollView";
 import { Screen } from "@/components/Screen/Screen";
 import { getAuthErrorMessage } from "@/lib/authErrors";
 import {
@@ -24,7 +18,7 @@ import {
 import { registerSchema } from "@/lib/validation/authSchemas";
 import { SCREENS } from "@/navigation/params";
 import { useTheme } from "@/theme";
-import { scrollContentBelowHeader, scrollViewStyle } from "@/theme/screenLayout";
+import { scrollContentBelowHeader } from "@/theme/screenLayout";
 import { styles } from "./RegisterScreen.styles";
 
 export function RegisterScreen() {
@@ -71,16 +65,7 @@ export function RegisterScreen() {
 
   return (
     <Screen edges={["bottom"]} padded={false}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          style={scrollViewStyle}
-          contentContainerStyle={scrollContentBelowHeader}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-        >
+      <KeyboardAwareScrollView contentContainerStyle={scrollContentBelowHeader}>
           <Text style={[styles.title, { color: colors.text }]}>Create account</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             Join your community on Wrap
@@ -154,8 +139,7 @@ export function RegisterScreen() {
             <Text style={{ color: colors.textMuted }}>Already have an account?</Text>
             <Text style={[styles.link, { color: colors.primary }]}>Log in</Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-} from "react-native";
+import { Pressable, Text } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -13,13 +7,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as authApi from "@/api/auth";
 import { Button } from "@/components/Button/Button";
 import { FormField } from "@/components/FormField/FormField";
+import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView/KeyboardAwareScrollView";
 import { Screen } from "@/components/Screen/Screen";
 import { useAuth } from "@/hooks/useAuth";
 import { getAuthErrorMessage } from "@/lib/authErrors";
 import { loginSchema } from "@/lib/validation/authSchemas";
 import { SCREENS } from "@/navigation/params";
 import { useTheme } from "@/theme";
-import { scrollContentFullScreen, scrollViewStyle } from "@/theme/screenLayout";
+import { scrollContentFullScreen } from "@/theme/screenLayout";
 import { styles } from "./LoginScreen.styles";
 
 export function LoginScreen() {
@@ -59,16 +54,7 @@ export function LoginScreen() {
 
   return (
     <Screen edges={["top", "bottom"]} padded={false}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          style={scrollViewStyle}
-          contentContainerStyle={scrollContentFullScreen}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator
-        >
+      <KeyboardAwareScrollView contentContainerStyle={scrollContentFullScreen}>
           <Text style={[styles.title, { color: colors.text }]}>Welcome back</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             Sign in to your account
@@ -125,8 +111,7 @@ export function LoginScreen() {
             <Text style={{ color: colors.textMuted }}>No account?</Text>
             <Text style={[styles.link, { color: colors.primary }]}>Register</Text>
           </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

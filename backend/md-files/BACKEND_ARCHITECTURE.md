@@ -19,6 +19,7 @@ Adapted from [goldbergyoni/nodebestpractices](https://github.com/goldbergyoni/no
 9. [Going to Production](#9-going-to-production)
 10. [Testing](#10-testing)
 11. [Recommended Additions to package.json](#11-recommended-additions-to-packagejson)
+12. [Multer File Upload Architecture](#12-multer-file-upload-architecture)
 
 ---
 
@@ -45,6 +46,7 @@ src/
 │   ├── logger.js
 │   ├── errors.js
 │   └── prisma.js
+├── multer/                # file upload layer only — see section 12
 └── middleware/            # generic: error-handler, request-id, auth
 ```
 
@@ -355,6 +357,14 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
 PORT=3000
 CORS_ORIGIN=http://localhost:3001
 LOG_LEVEL=info
+
+# Upload (when Multer is enabled — see section 12)
+UPLOAD_MAX_FILE_SIZE_MB=5
+UPLOAD_MAX_FILES=5
+UPLOAD_TEMP_DIR=storage/uploads/temp
+UPLOAD_PUBLIC_DIR=storage/uploads/public
+UPLOAD_PRIVATE_DIR=storage/uploads/private
+PUBLIC_UPLOAD_BASE_URL=/uploads
 ```
 
 ### 4.3 Secrets belong in a secret manager in production
@@ -909,6 +919,762 @@ A couple of notes on what I changed and _didn't_ change:
 - **Kept `dotenv`** — it's fine, but you could also use `node --env-file=.env` and drop it.
 - **Did not add a testing framework** — Node's built-in `node:test` is enough until you have ~50+ tests and want fancier reporters.
 - **Did not add TypeScript** — your current package is pure JS. Adding TS is a bigger conversation; if you do, do it incrementally with JSDoc + `checkJs` first.
+
+---
+
+## 12. Multer File Upload Architecture
+
+This section defines the backend architecture for handling file uploads using **Multer**. It is **strictly Multer-related** — it does not cover broader modules, controllers, services, database repositories, auth architecture, or unrelated folder structures.
+
+[Multer](https://www.npmjs.com/package/multer) is a Node.js middleware for `multipart/form-data`, mainly file uploads. Uploaded files are exposed on the request as `req.file` or `req.files`, depending on whether `.single()`, `.array()`, or `.fields()` is used.
+
+The goal of this Multer architecture is to keep upload handling:
+
+- isolated
+- secure
+- reusable
+- easy to configure
+- easy to test
+- easy to extend later
+
+Multer should be treated as the **upload parsing and temporary file receiving layer only**.
+
+It should not contain unrelated backend logic such as:
+
+- database logic
+- business rules
+- user management
+- product management
+- order management
+- authentication logic
+- unrelated module structure
+
+### 12.1 Core Multer Design Principle
+
+The Multer layer should be responsible for:
+
+```txt
+multipart/form-data parsing
+file receiving
+temporary file storage
+basic file filtering
+upload size limits
+upload field limits
+upload error handling
+temporary file cleanup helpers
+```
+
+The Multer layer should not decide what the uploaded file means in the business domain.
+
+For example, Multer can know that a file is an image or PDF, but it should not decide whether the image belongs to a product, user profile, invoice, or document workflow.
+
+### 12.2 Recommended Multer-Only Folder Structure
+
+```txt
+src/
+  multer/
+    multer.config.js
+    multer.storage.js
+    multer.file-filter.js
+    multer.limits.js
+    multer.middleware.js
+    multer-error.middleware.js
+
+    validators/
+      validate-file-extension.js
+      validate-file-signature.js
+      validate-file-size.js
+
+    utils/
+      generate-safe-file-name.js
+      get-file-extension.js
+      ensure-upload-directory.js
+      cleanup-temp-file.js
+
+storage/
+  uploads/
+    temp/
+    public/
+    private/
+```
+
+This structure keeps all Multer-specific concerns in one place.
+
+The `src/multer/` folder contains the Multer configuration and helper logic.
+
+The `storage/uploads/` folder contains the physical upload directories used by Multer and the backend.
+
+### 12.3 Multer Folder Responsibilities
+
+```txt
+src/multer/
+```
+
+This folder contains only upload-related code.
+
+| File or Folder | Responsibility |
+| --- | --- |
+| `multer.config.js` | Creates and exports the main Multer instance |
+| `multer.storage.js` | Defines where Multer stores incoming files and how filenames are generated |
+| `multer.file-filter.js` | Defines which MIME types Multer accepts or rejects |
+| `multer.limits.js` | Defines upload size, file count, and field limits |
+| `multer.middleware.js` | Exports reusable Multer middleware helpers |
+| `multer-error.middleware.js` | Handles Multer-specific errors |
+| `validators/` | Contains additional upload validation helpers |
+| `utils/` | Contains filename, path, directory, and cleanup helpers |
+
+### 12.4 Multer Config File
+
+```txt
+src/multer/multer.config.js
+```
+
+This file creates the final Multer instance. It should combine `multer.storage.js`, `multer.file-filter.js`, and `multer.limits.js`.
+
+Example (ESM — matches this backend):
+
+```js
+import multer from "multer";
+import storage from "./multer.storage.js";
+import fileFilter from "./multer.file-filter.js";
+import limits from "./multer.limits.js";
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits,
+});
+
+export default upload;
+```
+
+This file should stay simple. It should not contain:
+
+```txt
+route definitions
+database logic
+business rules
+controller logic
+authorization logic
+file ownership logic
+```
+
+### 12.5 Multer Storage File
+
+```txt
+src/multer/multer.storage.js
+```
+
+This file defines how Multer stores files when they arrive.
+
+Multer supports `diskStorage`, which gives control over the upload destination and filename. It also supports `memoryStorage`, where files are kept in memory as buffers.
+
+The recommended default pattern is to upload files into a temporary folder first:
+
+```txt
+storage/uploads/temp/
+```
+
+This allows later validation, cleanup, and movement into either public or private storage.
+
+Example:
+
+```js
+import multer from "multer";
+import path from "node:path";
+import generateSafeFileName from "./utils/generate-safe-file-name.js";
+import ensureUploadDirectory from "./utils/ensure-upload-directory.js";
+
+const tempUploadPath = path.join(process.cwd(), "storage", "uploads", "temp");
+
+ensureUploadDirectory(tempUploadPath);
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, tempUploadPath);
+  },
+
+  filename: (_req, file, cb) => {
+    const safeFileName = generateSafeFileName(file.originalname);
+    cb(null, safeFileName);
+  },
+});
+
+export default storage;
+```
+
+Recommended storage rule:
+
+```txt
+Multer should first receive files into storage/uploads/temp/.
+Files should only be moved to public/ or private/ after upload validation passes.
+```
+
+### 12.6 Multer File Filter
+
+```txt
+src/multer/multer.file-filter.js
+```
+
+This file defines which MIME types Multer is allowed to accept. Multer provides a `fileFilter` option that can accept or reject files before they continue through the request pipeline.
+
+Example:
+
+```js
+const allowedMimeTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+];
+
+function fileFilter(_req, file, cb) {
+  if (!allowedMimeTypes.includes(file.mimetype)) {
+    return cb(new Error("Unsupported file type"), false);
+  }
+
+  cb(null, true);
+}
+
+export default fileFilter;
+```
+
+This is only the first validation layer.
+
+The MIME type comes from the uploaded request and should not be trusted as the only source of truth. [OWASP File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html) recommends validating uploaded files using allowlisted extensions, type checks, safe filenames, size limits, and storage controls.
+
+### 12.7 Multer Limits File
+
+```txt
+src/multer/multer.limits.js
+```
+
+This file defines upload limits. Multer supports a `limits` option for restricting uploaded file size and request parts.
+
+Example:
+
+```js
+const limits = {
+  fileSize: 5 * 1024 * 1024,
+  files: 5,
+  fields: 20,
+  fieldSize: 1 * 1024 * 1024,
+};
+
+export default limits;
+```
+
+Recommended limit categories:
+
+| Limit | Purpose |
+| --- | --- |
+| `fileSize` | Maximum size per uploaded file |
+| `files` | Maximum number of file uploads in one request |
+| `fields` | Maximum number of non-file form fields |
+| `fieldSize` | Maximum size of non-file text fields |
+| `parts` | Maximum number of total multipart parts |
+
+Suggested default values:
+
+```txt
+Avatar image: 2 MB
+General image: 5 MB
+PDF document: 10 MB
+Multiple file upload: 5 files max
+Text field size: 1 MB
+```
+
+These values can be adjusted per project, but every upload route should have limits.
+
+### 12.8 Multer Middleware File
+
+```txt
+src/multer/multer.middleware.js
+```
+
+This file exports reusable Multer middleware functions. Multer provides `.single()`, `.array()`, `.fields()`, `.none()`, and `.any()`.
+
+Example:
+
+```js
+import upload from "./multer.config.js";
+
+export const uploadSingle = (fieldName) => upload.single(fieldName);
+
+export const uploadArray = (fieldName, maxCount = 5) =>
+  upload.array(fieldName, maxCount);
+
+export const uploadFields = (fields) => upload.fields(fields);
+
+export const uploadNone = () => upload.none();
+```
+
+Usage examples:
+
+```js
+uploadSingle("avatar");
+uploadArray("images", 5);
+uploadFields([
+  { name: "avatar", maxCount: 1 },
+  { name: "documents", maxCount: 5 },
+]);
+```
+
+Recommended rule:
+
+```txt
+Use explicit Multer middleware per upload route.
+Avoid using upload.any() unless there is a clear reason.
+```
+
+The official Multer documentation warns against adding Multer globally because a malicious user could upload files to routes where uploads were not expected.
+
+### 12.9 Multer Error Middleware
+
+```txt
+src/multer/multer-error.middleware.js
+```
+
+This file handles Multer-specific errors and converts them into clean API responses. Use the same `{ error: { code, message } }` shape as the global error handler (section 2.2).
+
+Example:
+
+```js
+import multer from "multer";
+
+const MULTER_CODES = {
+  LIMIT_FILE_SIZE: { status: 400, code: "UPLOAD_FILE_TOO_LARGE", message: "Uploaded file is too large" },
+  LIMIT_FILE_COUNT: { status: 400, code: "UPLOAD_TOO_MANY_FILES", message: "Too many files uploaded" },
+  LIMIT_FIELD_COUNT: { status: 400, code: "UPLOAD_TOO_MANY_FIELDS", message: "Too many form fields submitted" },
+  LIMIT_FIELD_VALUE: { status: 400, code: "UPLOAD_FIELD_TOO_LARGE", message: "One of the form fields is too large" },
+  LIMIT_UNEXPECTED_FILE: { status: 400, code: "UPLOAD_UNEXPECTED_FIELD", message: "Unexpected file field" },
+};
+
+export function multerErrorMiddleware(err, req, res, next) {
+  if (err instanceof multer.MulterError) {
+    const mapped = MULTER_CODES[err.code];
+    if (mapped) {
+      return res.status(mapped.status).json({
+        error: { code: mapped.code, message: mapped.message },
+      });
+    }
+    return res.status(400).json({
+      error: { code: "UPLOAD_ERROR", message: err.message },
+    });
+  }
+
+  if (err.message === "Unsupported file type") {
+    return res.status(400).json({
+      error: { code: "UPLOAD_UNSUPPORTED_TYPE", message: "Unsupported file type" },
+    });
+  }
+
+  next(err);
+}
+```
+
+Register this middleware **before** the global `errorHandler` in `app.js`. This middleware should only handle upload-related errors; general backend errors stay in `error-handler.js`.
+
+### 12.10 Multer Validators Folder
+
+```txt
+src/multer/validators/
+```
+
+This folder contains validation helpers that are directly related to uploaded files:
+
+```txt
+validators/
+  validate-file-extension.js
+  validate-file-signature.js
+  validate-file-size.js
+```
+
+These validators are different from business validation. They should only answer:
+
+```txt
+Is this extension allowed?
+Does this file signature match the expected file type?
+Is this file within the allowed size?
+```
+
+They should not answer:
+
+```txt
+Does this user own the file?
+Should this document be linked to an order?
+Should this file be saved in the database?
+```
+
+#### Validate File Extension
+
+```js
+import path from "node:path";
+
+export function validateFileExtension(originalName, allowedExtensions) {
+  const extension = path.extname(originalName).toLowerCase();
+  return allowedExtensions.includes(extension);
+}
+```
+
+Example usage:
+
+```js
+const isValidExtension = validateFileExtension(file.originalname, [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".pdf",
+]);
+```
+
+Recommended rule: only allow extensions required by the application. Reject everything else by default.
+
+#### Validate File Signature
+
+For low-risk uploads, MIME type and extension checks may be enough. For sensitive uploads (identity documents, PDFs, certificates, invoices, admin imports), validate the real file signature as well.
+
+```js
+export async function validateFileSignature(filePath, allowedTypes) {
+  // Read the file content
+  // Detect the actual file type
+  // Compare detected type against allowedTypes
+  // Return true or false
+}
+```
+
+#### Validate File Size
+
+Although Multer can enforce size limits, this helper is useful when different upload types need different rules:
+
+```js
+export function validateFileSize(file, maxSizeInBytes) {
+  return file.size <= maxSizeInBytes;
+}
+```
+
+Use Multer limits as the first protection layer. Use custom size validation only when upload types need different limits.
+
+### 12.11 Multer Utils Folder
+
+```txt
+src/multer/utils/
+```
+
+```txt
+utils/
+  generate-safe-file-name.js
+  get-file-extension.js
+  ensure-upload-directory.js
+  cleanup-temp-file.js
+```
+
+#### Generate Safe File Name
+
+The backend should not use the original uploaded filename as the stored filename.
+
+```js
+import { randomUUID } from "node:crypto";
+import path from "node:path";
+
+export function generateSafeFileName(originalName) {
+  const extension = path.extname(originalName).toLowerCase();
+  return `${randomUUID()}${extension}`;
+}
+```
+
+Example output: `f3b6b10e-5e14-4120-a9f2-91d80f69c9ad.pdf`
+
+Store the original file name as metadata only. Use a generated safe file name for actual storage.
+
+#### Get File Extension
+
+```js
+import path from "node:path";
+
+export function getFileExtension(fileName) {
+  return path.extname(fileName).toLowerCase();
+}
+```
+
+#### Ensure Upload Directory
+
+```js
+import fs from "node:fs";
+
+export function ensureUploadDirectory(directoryPath) {
+  fs.mkdirSync(directoryPath, { recursive: true });
+}
+```
+
+#### Cleanup Temp File
+
+```js
+import fs from "node:fs/promises";
+
+export async function cleanupTempFile(filePath) {
+  if (!filePath) return;
+  await fs.unlink(filePath).catch(() => null);
+}
+```
+
+Any file placed in `storage/uploads/temp/` should either be moved or deleted. Temporary files should not remain there permanently.
+
+### 12.12 Upload Storage Folder Structure
+
+```txt
+storage/
+  uploads/
+    temp/
+    public/
+    private/
+```
+
+#### Temp Upload Folder — `storage/uploads/temp/`
+
+Default destination for Multer uploads. Receive files before final validation; hold temporarily; allow cleanup on failure; move to public or private after validation.
+
+#### Public Upload Folder — `storage/uploads/public/`
+
+For files safe to expose publicly (avatars, public images, banners). May be served through Express static middleware:
+
+```js
+import path from "node:path";
+import express from "express";
+
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "storage", "uploads", "public")),
+);
+```
+
+Only files intended to be publicly accessible should be moved into `storage/uploads/public/`.
+
+#### Private Upload Folder — `storage/uploads/private/`
+
+For sensitive files (documents, invoices, contracts, certificates, identity documents, admin uploads). Do not serve with `express.static`. Access only through protected backend routes. Prefer storing outside the webroot when possible ([OWASP](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html)).
+
+### 12.13 Multer Upload Types
+
+#### Single File Upload
+
+```js
+uploadSingle("avatar");
+```
+
+Expected field: `avatar`. File available as `req.file`.
+
+#### Multiple Files Under One Field
+
+```js
+uploadArray("images", 5);
+```
+
+Files available as `req.files` (array).
+
+#### Multiple File Fields
+
+```js
+uploadFields([
+  { name: "avatar", maxCount: 1 },
+  { name: "documents", maxCount: 5 },
+]);
+```
+
+Files available as `req.files` (object keyed by field name).
+
+#### Text-Only Multipart Form
+
+```js
+uploadNone();
+```
+
+For `multipart/form-data` requests with no files.
+
+#### Any File Upload — avoid
+
+```js
+upload.any();
+```
+
+Avoid unless absolutely necessary. Accepts files from any field name, which makes uploads less predictable and harder to control.
+
+### 12.14 Multer Memory Storage
+
+```js
+import multer from "multer";
+
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+});
+```
+
+Use `memoryStorage` only for small files or direct-to-cloud upload flows. Avoid for large files — they increase memory usage and can affect stability.
+
+### 12.15 Multer Disk Storage
+
+Disk storage is the recommended default for most local upload flows. Use `diskStorage` when files should first be written to `storage/uploads/temp/`, then validated, moved, or deleted.
+
+### 12.16 File Naming Rules
+
+```txt
+Do not trust file.originalname as the stored filename.
+Generate a new safe filename.
+Preserve the original name only as metadata if needed.
+Normalize extensions to lowercase.
+Do not allow path separators in generated filenames.
+Avoid predictable filenames.
+Use UUID-based or random filenames.
+```
+
+Recommended format: `{uuid}.{extension}`
+
+### 12.17 File Type Rules
+
+Allowed image MIME types: `image/jpeg`, `image/png`, `image/webp`
+
+Allowed document MIME types: `application/pdf`
+
+Allowed extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.pdf`
+
+Reject all file types that are not explicitly allowed.
+
+### 12.18 Public vs Private Upload Rules
+
+- **Public:** profile images, public images, public banners — move to `storage/uploads/public/` only when safe to expose.
+- **Private:** contracts, invoices, identity documents, certificates, private PDFs — never serve statically.
+
+### 12.19 Temporary File Lifecycle
+
+```txt
+1. Multer receives file
+2. File is written to storage/uploads/temp/
+3. File passes or fails validation
+4. If valid, file is moved to public/ or private/
+5. If invalid, file is deleted
+6. If later processing fails, file is deleted
+```
+
+The temp folder should not become permanent storage.
+
+### 12.20 Multer Security Checklist
+
+```txt
+Use route-specific Multer middleware.
+Do not register Multer globally.
+Avoid upload.any() unless required.
+Use file size limits.
+Use file count limits.
+Use field limits.
+Use MIME type allowlists.
+Use extension allowlists.
+Use file signature checks for sensitive files.
+Generate safe internal filenames.
+Do not trust original filenames.
+Store private files outside public static access.
+Do not expose internal file paths.
+Clean up temp files after failures.
+Reject unexpected file fields.
+Reject unsupported file types.
+```
+
+[OWASP Unrestricted File Upload](https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload) warns that unrestricted uploads can lead to malicious files, unauthorized access, large file abuse, overwrite risks, and information disclosure.
+
+### 12.21 Recommended Multer Error Responses
+
+| Error Case | Code | Message |
+| --- | --- | --- |
+| File too large | `UPLOAD_FILE_TOO_LARGE` | Uploaded file is too large |
+| Too many files | `UPLOAD_TOO_MANY_FILES` | Too many files uploaded |
+| Unsupported file type | `UPLOAD_UNSUPPORTED_TYPE` | Unsupported file type |
+| Unexpected field | `UPLOAD_UNEXPECTED_FIELD` | Unexpected file field |
+| Too many fields | `UPLOAD_TOO_MANY_FIELDS` | Too many form fields submitted |
+| Field too large | `UPLOAD_FIELD_TOO_LARGE` | One of the form fields is too large |
+
+Do not expose internal technical details (server file paths, stack traces, storage engine internals, temporary file paths).
+
+### 12.22 Recommended Multer Environment Variables
+
+Add to `.env.example` when implementing uploads:
+
+```env
+UPLOAD_MAX_FILE_SIZE_MB=5
+UPLOAD_MAX_FILES=5
+UPLOAD_TEMP_DIR=storage/uploads/temp
+UPLOAD_PUBLIC_DIR=storage/uploads/public
+UPLOAD_PRIVATE_DIR=storage/uploads/private
+PUBLIC_UPLOAD_BASE_URL=/uploads
+```
+
+These variables should only control upload-related behavior.
+
+### 12.23 Recommended Complete Multer Flow
+
+```txt
+1. Request arrives as multipart/form-data
+2. Route applies specific Multer middleware
+3. Multer checks field name
+4. Multer checks file size limits
+5. Multer checks file count limits
+6. Multer applies fileFilter
+7. Multer writes file to storage/uploads/temp/
+8. Additional upload validators can run
+9. File is either moved to public/private storage or deleted
+10. Multer-specific errors are handled by multer-error.middleware.js
+```
+
+### 12.24 Final Multer-Only Architecture Summary
+
+```txt
+src/multer/multer.config.js
+  Combines Multer storage, file filter, and limits.
+
+src/multer/multer.storage.js
+  Controls temporary upload destination and safe filename generation.
+
+src/multer/multer.file-filter.js
+  Rejects unsupported MIME types.
+
+src/multer/multer.limits.js
+  Defines file size, file count, and field limits.
+
+src/multer/multer.middleware.js
+  Exports reusable upload middleware helpers.
+
+src/multer/multer-error.middleware.js
+  Handles Multer-specific errors.
+
+src/multer/validators/
+  Upload-specific validators for extension, signature, and size.
+
+src/multer/utils/
+  Helpers for filenames, extensions, directories, and cleanup.
+
+storage/uploads/temp/
+  Temporary Multer upload destination.
+
+storage/uploads/public/
+  Public uploaded file storage.
+
+storage/uploads/private/
+  Private uploaded file storage.
+```
+
+### 12.25 Final Rule
+
+```txt
+Keep all Multer configuration, validation, limits, storage setup, upload middleware,
+upload errors, and upload cleanup inside the Multer architecture section.
+
+Do not include unrelated backend modules, controllers, services, repositories,
+database models, authentication flows, or business-specific folders in this section.
+```
+
+When implementing uploads in this project, wire routes explicitly (section 12.8), register `multerErrorMiddleware` before the global error handler, and add `storage/uploads/*` to `.gitignore` while keeping directory structure via `.gitkeep` files if needed.
 
 ---
 

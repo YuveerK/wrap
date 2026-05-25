@@ -8,6 +8,7 @@ import { config } from "./config/index.js";
 import { logger } from "./libraries/logger.js";
 import { prisma } from "./libraries/prisma.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import { multerErrorMiddleware } from "./multer/multer-error.middleware.js";
 import usersRouter from "./components/users/users.routes.js";
 import authRouter from "./components/auth/auth.routes.js";
 import issuesRouter from "./components/issues/issues.routes.js";
@@ -35,6 +36,11 @@ export function buildApp() {
   app.use(pinoHttp({ logger, customProps: (req) => ({ requestId: req.id }) }));
 
   app.get("/healthz", (req, res) => res.json({ status: "ok" }));
+  app.use(
+    config.upload.publicBaseUrl,
+    express.static(config.upload.publicDir),
+  );
+
   app.get("/readyz", async (req, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
@@ -50,6 +56,7 @@ export function buildApp() {
   app.use("/api/posts", postsRouter);
   app.use("/api/communities", communitiesRouter);
 
+  app.use(multerErrorMiddleware);
   app.use(errorHandler);
 
   return app;

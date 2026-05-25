@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import * as communitiesApi from "@/api/communities";
 import * as postsApi from "@/api/posts";
@@ -26,6 +26,7 @@ import { styles } from "./FeedScreen.styles";
 
 export function FeedScreen() {
   const navigation = useNavigation();
+  const queryClient = useQueryClient();
   const tabBarHeight = useBottomTabBarHeight();
   const { colors, semantic } = useTheme();
   const listBg = semantic.feedListBackground;
@@ -54,6 +55,53 @@ export function FeedScreen() {
   const goToCompose = useCallback(() => {
     navigation.navigate(SCREENS.CreatePost);
   }, [navigation]);
+
+  const goToPost = useCallback(
+    (postId) => {
+      navigation.navigate(SCREENS.PostDetail, { postId });
+    },
+    [navigation],
+  );
+
+  const goToComment = useCallback(
+    (postId) => {
+      navigation.navigate(SCREENS.PostComment, { postId });
+    },
+    [navigation],
+  );
+
+  const likeMutation = useMutation({
+    mutationFn: (postId) => postsApi.toggleLike(postId),
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+      const previous = queryClient.getQueryData(["posts"]);
+      queryClient.setQueryData(["posts"], (old) => {
+        if (!old?.posts) return old;
+        return {
+          ...old,
+          posts: old.posts.map((p) => {
+            if (p.id !== postId) return p;
+            const liked = !p.likedByMe;
+            return {
+              ...p,
+              likedByMe: liked,
+              likeCount: Math.max(0, (p.likeCount ?? 0) + (liked ? 1 : -1)),
+            };
+          }),
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _postId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["posts"], context.previous);
+      }
+    },
+    onSettled: (_data, _err, postId) => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["post", postId] });
+    },
+  });
 
   const showSkeleton = isLoading && posts.length === 0;
   const showError = error && posts.length === 0 && !showSkeleton;
@@ -124,7 +172,14 @@ export function FeedScreen() {
               <FeedEmptyState onCompose={goToCompose} />
             }
             ItemSeparatorComponent={() => <View style={styles.separator} />}
-            renderItem={({ item }) => <FeedPostCard post={item} />}
+            renderItem={({ item }) => (
+              <FeedPostCard
+                post={item}
+                onPress={() => goToPost(item.id)}
+                onLike={() => likeMutation.mutate(item.id)}
+                onComment={() => goToComment(item.id)}
+              />
+            )}
           />
         )}
 

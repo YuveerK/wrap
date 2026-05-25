@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "node:path";
 
 function required(name) {
   const v = process.env[name];
@@ -30,6 +31,25 @@ export const config = Object.freeze({
 
   backendUrl: process.env.BACKEND_URL ?? "http://localhost:3000",
   appName: process.env.APP_NAME ?? "Wrap Community",
+
+  upload: Object.freeze({
+    maxFileSizeBytes:
+      Number(process.env.UPLOAD_MAX_FILE_SIZE_MB ?? 5) * 1024 * 1024,
+    maxFiles: Number(process.env.UPLOAD_MAX_FILES ?? 5),
+    tempDir: path.join(
+      process.cwd(),
+      process.env.UPLOAD_TEMP_DIR ?? "storage/uploads/temp",
+    ),
+    publicDir: path.join(
+      process.cwd(),
+      process.env.UPLOAD_PUBLIC_DIR ?? "storage/uploads/public",
+    ),
+    privateDir: path.join(
+      process.cwd(),
+      process.env.UPLOAD_PRIVATE_DIR ?? "storage/uploads/private",
+    ),
+    publicBaseUrl: process.env.PUBLIC_UPLOAD_BASE_URL ?? "/uploads",
+  }),
 });
 
 if (

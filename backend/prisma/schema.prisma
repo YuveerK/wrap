@@ -68,6 +68,8 @@ model User {
   issueUpdates   IssueUpdate[]
   issueSupports  IssueSupport[]
   posts          Post[]
+  postLikes      PostLike[]
+  postComments   PostComment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -142,12 +144,59 @@ model Post {
   authorId    Int
   author      User      @relation(fields: [authorId], references: [id])
 
-  title  String?
-  body   String
-  pinned Boolean @default(false)
+  title        String?
+  body         String
+  pinned       Boolean @default(false)
+  bannerPath   String?
+  likeCount    Int     @default(0)
+  commentCount Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  likes       PostLike[]
+  attachments PostAttachment[]
+  comments    PostComment[]
+
   @@index([communityId, createdAt])
+}
+
+model PostLike {
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([postId, userId])
+}
+
+model PostAttachment {
+  id           Int      @id @default(autoincrement())
+  postId       Int
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  originalName String?
+  storedName   String
+  mimeType     String
+  sizeBytes    Int
+  urlPath      String
+  createdAt    DateTime @default(now())
+
+  @@index([postId])
+}
+
+model PostComment {
+  id       Int      @id @default(autoincrement())
+  postId   Int
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId Int
+  author   User     @relation(fields: [authorId], references: [id])
+  parentId Int?
+  parent   PostComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  PostComment[] @relation("CommentReplies")
+  body     String
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
+  @@index([parentId])
 }
