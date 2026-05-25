@@ -6,5 +6,5 @@ const adapter = new PrismaPg({ connectionString: config.databaseUrl });
 
 export const prisma = new PrismaClient({
   adapter,
-  log: config.env === "development" ? ["warn", "error"] : ["warn", "error"],
+  log: config.env === "development" ? ["query", "warn", "error"] : ["warn", "error"],
 });

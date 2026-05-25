@@ -3,7 +3,7 @@ import "dotenv/config";
 function required(name) {
   const v = process.env[name];
   if (!v) {
-    console.error(`Missing required env var: ${name}`);
+    console.error(`[config] Missing required env var: ${name}`);
     process.exit(1);
   }
   return v;
@@ -15,4 +15,19 @@ export const config = Object.freeze({
   databaseUrl: required("DATABASE_URL"),
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
   logLevel: process.env.LOG_LEVEL ?? "info",
+
+  jwt: {
+    accessSecret: required("JWT_ACCESS_SECRET"),
+    refreshSecret: required("JWT_REFRESH_SECRET"),
+    accessExpiry: process.env.JWT_ACCESS_EXPIRY ?? "15m",
+    refreshExpiry: process.env.JWT_REFRESH_EXPIRY ?? "7d",
+  },
+
+  gmail: {
+    user: required("GMAIL_USER"),
+    appPassword: required("GMAIL_APP_PASSWORD"),
+  },
+
+  backendUrl: process.env.BACKEND_URL ?? "http://localhost:3000",
+  appName: process.env.APP_NAME ?? "Wrap Community",
 });
