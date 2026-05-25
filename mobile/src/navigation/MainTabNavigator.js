@@ -23,10 +23,22 @@ export function MainTabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+        },
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          fontWeight: "700",
+        },
         tabBarIcon: ({ focused, color, size }) => {
           const icons = TAB_ICONS[route.name] ?? TAB_ICONS.ProfileTab;
           const name = focused ? icons.focused : icons.unfocused;
-          return <Ionicons name={name} size={size} color={color} />;
+          const iconSize = focused ? 24 : 22;
+          return <Ionicons name={name} size={iconSize} color={color} />;
         },
       })}
     >
