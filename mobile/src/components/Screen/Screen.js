@@ -8,13 +8,19 @@ import { spacing } from "@/theme/spacing";
  * @param {import('react').ReactNode} props.children
  * @param {import('react-native-safe-area-context').Edge[]} [props.edges]
  * @param {boolean} [props.padded] — inner content padding (off for full-width ScrollView)
+ * @param {string} [props.backgroundColor] — override default background
  */
-export function Screen({ children, edges = ["top", "bottom"], padded = true }) {
+export function Screen({
+  children,
+  edges = ["top", "bottom"],
+  padded = true,
+  backgroundColor,
+}) {
   const { colors } = useTheme();
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: backgroundColor ?? colors.background }]}
       edges={edges}
     >
       {padded ? <View style={styles.content}>{children}</View> : children}

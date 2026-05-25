@@ -4,8 +4,24 @@ export const linking = {
   prefixes: ["wrap://", "https://wrap.example.com"],
   config: {
     screens: {
-      [SCREENS.Home]: "",
-      [SCREENS.Profile]: "user/:userId",
+      Main: {
+        screens: {
+          FeedTab: {
+            screens: {
+              [SCREENS.Feed]: "feed",
+              [SCREENS.CreatePost]: "feed/new",
+            },
+          },
+          IssuesTab: {
+            screens: {
+              [SCREENS.IssuesList]: "issues",
+              [SCREENS.IssueDetail]: "issues/:issueId",
+              [SCREENS.CreateIssue]: "issues/new",
+            },
+          },
+          ProfileTab: SCREENS.Profile,
+        },
+      },
       [SCREENS.Login]: "login",
       [SCREENS.Register]: "register",
       [SCREENS.ForgotPassword]: "forgot-password",

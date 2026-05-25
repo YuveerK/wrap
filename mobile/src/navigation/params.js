@@ -1,9 +1,12 @@
 /**
  * Central reference for navigation params.
- * Every screen should match the shape declared here.
  *
  * @typedef {Object} ScreenParams
- * @property {undefined} Home
+ * @property {undefined} Feed
+ * @property {undefined} CreatePost
+ * @property {undefined} IssuesList
+ * @property {{ issueId: number }} IssueDetail
+ * @property {undefined} CreateIssue
  * @property {undefined} Profile
  * @property {undefined} Login
  * @property {undefined} Register
@@ -13,7 +16,11 @@
  */
 
 export const SCREENS = /** @type {const} */ ({
-  Home: "Home",
+  Feed: "Feed",
+  CreatePost: "CreatePost",
+  IssuesList: "IssuesList",
+  IssueDetail: "IssueDetail",
+  CreateIssue: "CreateIssue",
   Profile: "Profile",
   Login: "Login",
   Register: "Register",

@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from "react";
 import * as authApi from "@/api/auth";
+import * as communitiesApi from "@/api/communities";
 import {
   clearAuthTokens,
   getAuthToken,
@@ -24,7 +25,14 @@ export function useAuth() {
         if (!accessToken) return;
 
         const me = await authApi.fetchMe();
-        if (!cancelled) setUser(me);
+        if (!cancelled) {
+          setUser(me);
+          try {
+            await communitiesApi.fetchCurrentCommunity();
+          } catch {
+            // Community assignment is best-effort on hydrate
+          }
+        }
       } catch {
         if (!cancelled) {
           await clearAuthTokens();
@@ -45,6 +53,11 @@ export function useAuth() {
     async ({ accessToken, refreshToken, user: sessionUser }) => {
       await saveAuthTokens(accessToken, refreshToken);
       setUser(sessionUser);
+      try {
+        await communitiesApi.fetchCurrentCommunity();
+      } catch {
+        // Community assignment is best-effort on login
+      }
     },
     [setUser],
   );

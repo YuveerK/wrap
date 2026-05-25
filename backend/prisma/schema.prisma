@@ -6,6 +6,41 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  RESIDENT
+  COMMITTEE
+  ADMIN
+}
+
+enum IssueCategory {
+  POTHOLE
+  ELECTRICITY
+  WATER
+  ROADS
+  WASTE
+  OTHER
+}
+
+enum IssueStatus {
+  REPORTED
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Community {
+  id         Int      @id @default(autoincrement())
+  name       String
+  slug       String   @unique
+  inviteCode String?  @unique
+  createdAt  DateTime @default(now())
+
+  users  User[]
+  issues Issue[]
+  posts  Post[]
+}
+
 model User {
   id            Int       @id @default(autoincrement())
   email         String    @unique
@@ -20,12 +55,19 @@ model User {
   isVerified    Boolean   @default(false)
   isActive      Boolean   @default(true)
 
+  communityId Int?
+  community   Community? @relation(fields: [communityId], references: [id])
+
   verifyToken       String?
   verifyTokenExpiry DateTime?
   resetToken        String?
   resetTokenExpiry  DateTime?
 
-  refreshTokens RefreshToken[]
+  refreshTokens  RefreshToken[]
+  issuesReported Issue[]        @relation("IssueReporter")
+  issueUpdates   IssueUpdate[]
+  issueSupports  IssueSupport[]
+  posts          Post[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -40,8 +82,72 @@ model RefreshToken {
   createdAt DateTime @default(now())
 }
 
-enum Role {
-  RESIDENT
-  COMMITTEE
-  ADMIN
+model Issue {
+  id          Int            @id @default(autoincrement())
+  communityId Int
+  community   Community      @relation(fields: [communityId], references: [id])
+  reporterId  Int
+  reporter    User           @relation("IssueReporter", fields: [reporterId], references: [id])
+
+  category    IssueCategory
+  title       String
+  description String
+  status      IssueStatus    @default(REPORTED)
+
+  addressText String?
+  latitude    Float?
+  longitude   Float?
+
+  supportCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  updates  IssueUpdate[]
+  supports IssueSupport[]
+
+  @@index([communityId, status])
+  @@index([communityId, createdAt])
+}
+
+model IssueUpdate {
+  id       Int         @id @default(autoincrement())
+  issueId  Int
+  issue    Issue       @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  authorId Int
+  author   User        @relation(fields: [authorId], references: [id])
+
+  status IssueStatus?
+  note   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([issueId, createdAt])
+}
+
+model IssueSupport {
+  issueId   Int
+  issue     Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([issueId, userId])
+}
+
+model Post {
+  id          Int       @id @default(autoincrement())
+  communityId Int
+  community   Community @relation(fields: [communityId], references: [id])
+  authorId    Int
+  author      User      @relation(fields: [authorId], references: [id])
+
+  title  String?
+  body   String
+  pinned Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([communityId, createdAt])
 }
