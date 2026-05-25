@@ -1,18 +1,21 @@
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import userRoutes from "./routes/userRoutes.js";
-import { errorHandler } from "./middleware/errorHandler.js";
+import { config } from "./config/index.js";
+import { errorHandler } from "./middleware/error-handler.js";
+import usersRouter from "./components/users/users.routes.js";
 
-const app = express();
+export function buildApp() {
+  const app = express();
 
-app.use(cors());
-app.use(express.json());
+  app.disable("x-powered-by");
+  app.use(cors({ origin: config.corsOrigin.split(","), credentials: true }));
+  app.use(express.json({ limit: "100kb" }));
 
-app.get("/health", (req, res) => res.json({ status: "ok" }));
+  app.get("/healthz", (req, res) => res.json({ status: "ok" }));
 
-app.use("/api/users", userRoutes);
+  app.use("/api/users", usersRouter);
 
-app.use(errorHandler);
+  app.use(errorHandler);
 
-export default app;
+  return app;
+}
