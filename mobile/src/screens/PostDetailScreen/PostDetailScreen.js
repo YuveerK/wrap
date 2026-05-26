@@ -1,5 +1,7 @@
 import {
   Image,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,6 +10,7 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import MapView, { Marker } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
 import * as postsApi from "@/api/posts";
 import { CommentItem } from "@/components/CommentItem/CommentItem";
@@ -75,6 +78,17 @@ export function PostDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
+
+  const openInMaps = () => {
+    const lat = post?.latitude;
+    const lng = post?.longitude;
+    const label = encodeURIComponent(post?.addressText ?? "");
+    const url = Platform.select({
+      ios: `maps://app?ll=${lat},${lng}&q=${label}`,
+      android: `geo:${lat},${lng}?q=${lat},${lng}(${label})`,
+    });
+    Linking.openURL(url);
+  };
 
   const goToComment = () => {
     navigation.navigate(SCREENS.PostComment, { postId: id });
@@ -162,6 +176,42 @@ export function PostDetailScreen() {
         <Text style={[styles.body, { color: semantic.postBodyText }]}>
           {post.body}
         </Text>
+
+        {post.latitude != null && post.longitude != null ? (
+          <Pressable
+            onPress={openInMaps}
+            style={[styles.locationWrap, { borderColor: colors.border }]}
+          >
+            <MapView
+              style={styles.locationMap}
+              region={{
+                latitude: post.latitude,
+                longitude: post.longitude,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
+              }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              rotateEnabled={false}
+              pitchEnabled={false}
+              pointerEvents="none"
+            >
+              <Marker coordinate={{ latitude: post.latitude, longitude: post.longitude }} />
+            </MapView>
+            <View
+              style={[styles.locationLabel, { backgroundColor: semantic.cardBackground }]}
+            >
+              <Ionicons name="location" size={13} color={colors.primary} />
+              <Text
+                style={[styles.locationText, { color: colors.text }]}
+                numberOfLines={1}
+              >
+                {post.addressText || `${post.latitude.toFixed(5)}, ${post.longitude.toFixed(5)}`}
+              </Text>
+              <Ionicons name="open-outline" size={13} color={colors.textMuted} />
+            </View>
+          </Pressable>
+        ) : null}
 
         <PostAttachments attachments={post.attachments} />
 
@@ -284,6 +334,28 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
+  },
+  locationWrap: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+  },
+  locationMap: {
+    height: 160,
+  },
+  locationLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "500",
   },
   likeBar: {
     flexDirection: "row",
