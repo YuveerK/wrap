@@ -31,8 +31,8 @@ export async function findIssueById(id) {
   });
 }
 
-export async function findIssues(communityId, filters = {}) {
-  const where = { communityId };
+export async function findIssues(filters = {}) {
+  const where = {};
   if (filters.status) where.status = filters.status;
   if (filters.category) where.category = filters.category;
 

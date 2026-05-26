@@ -21,24 +21,20 @@ enum IssueCategory {
   OTHER
 }
 
+enum PostCategory {
+  NOTICES
+  SAFETY
+  EVENTS
+  LOST_AND_FOUND
+  RECOMMENDATIONS
+}
+
 enum IssueStatus {
   REPORTED
   ACKNOWLEDGED
   IN_PROGRESS
   RESOLVED
   CLOSED
-}
-
-model Community {
-  id         Int      @id @default(autoincrement())
-  name       String
-  slug       String   @unique
-  inviteCode String?  @unique
-  createdAt  DateTime @default(now())
-
-  users  User[]
-  issues Issue[]
-  posts  Post[]
 }
 
 model User {
@@ -54,9 +50,6 @@ model User {
   role          Role      @default(RESIDENT)
   isVerified    Boolean   @default(false)
   isActive      Boolean   @default(true)
-
-  communityId Int?
-  community   Community? @relation(fields: [communityId], references: [id])
 
   verifyToken       String?
   verifyTokenExpiry DateTime?
@@ -85,22 +78,19 @@ model RefreshToken {
 }
 
 model Issue {
-  id          Int            @id @default(autoincrement())
-  communityId Int
-  community   Community      @relation(fields: [communityId], references: [id])
-  reporterId  Int
-  reporter    User           @relation("IssueReporter", fields: [reporterId], references: [id])
+  id         Int           @id @default(autoincrement())
+  reporterId Int
+  reporter   User          @relation("IssueReporter", fields: [reporterId], references: [id])
 
   category    IssueCategory
   title       String
   description String
-  status      IssueStatus    @default(REPORTED)
+  status      IssueStatus   @default(REPORTED)
 
-  addressText String?
-  latitude    Float?
-  longitude   Float?
-
-  supportCount Int @default(0)
+  addressText  String?
+  latitude     Float?
+  longitude    Float?
+  supportCount Int           @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,8 +98,8 @@ model Issue {
   updates  IssueUpdate[]
   supports IssueSupport[]
 
-  @@index([communityId, status])
-  @@index([communityId, createdAt])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model IssueUpdate {
@@ -138,18 +128,21 @@ model IssueSupport {
 }
 
 model Post {
-  id          Int       @id @default(autoincrement())
-  communityId Int
-  community   Community @relation(fields: [communityId], references: [id])
-  authorId    Int
-  author      User      @relation(fields: [authorId], references: [id])
+  id       Int  @id @default(autoincrement())
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id])
 
+  category     PostCategory @default(NOTICES)
   title        String?
   body         String
-  pinned       Boolean @default(false)
+  pinned       Boolean      @default(false)
   bannerPath   String?
-  likeCount    Int     @default(0)
-  commentCount Int     @default(0)
+  likeCount    Int          @default(0)
+  commentCount Int          @default(0)
+
+  addressText String?
+  latitude    Float?
+  longitude   Float?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -158,7 +151,8 @@ model Post {
   attachments PostAttachment[]
   comments    PostComment[]
 
-  @@index([communityId, createdAt])
+  @@index([createdAt])
+  @@index([category])
 }
 
 model PostLike {

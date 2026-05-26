@@ -23,7 +23,6 @@ export async function register(data) {
       password: passwordHash,
       verifyToken: verifyTokenHash,
       verifyTokenExpiry,
-      communityId: 1,
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {

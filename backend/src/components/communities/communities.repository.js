@@ -21,6 +21,16 @@ export async function getUserCommunityId(userId) {
   return user?.communityId ?? null;
 }
 
+export const DEFAULT_COMMUNITY_ID = 1;
+
+/** Returns the user's communityId, auto-assigning to the default community if unset. */
+export async function resolveUserCommunityId(userId) {
+  const id = await getUserCommunityId(userId);
+  if (id) return id;
+  await assignUserToCommunity(userId, DEFAULT_COMMUNITY_ID);
+  return DEFAULT_COMMUNITY_ID;
+}
+
 export async function assignUserToCommunity(userId, communityId) {
   return await prisma.user.update({
     where: { id: userId },

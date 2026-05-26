@@ -34,6 +34,10 @@ export async function createPost(req, res, next) {
         title: parsed.data.title?.trim() || undefined,
         body: parsed.data.body.trim(),
         pinned: parsed.data.pinned,
+        category: parsed.data.category,
+        addressText: parsed.data.addressText?.trim() || undefined,
+        latitude: parsed.data.latitude,
+        longitude: parsed.data.longitude,
       },
       req,
     );

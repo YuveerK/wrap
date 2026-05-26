@@ -13,7 +13,6 @@ import usersRouter from "./components/users/users.routes.js";
 import authRouter from "./components/auth/auth.routes.js";
 import issuesRouter from "./components/issues/issues.routes.js";
 import postsRouter from "./components/posts/posts.routes.js";
-import communitiesRouter from "./components/communities/communities.routes.js";
 
 export function buildApp() {
   const app = express();
@@ -54,8 +53,6 @@ export function buildApp() {
   app.use("/api/users", usersRouter);
   app.use("/api/issues", issuesRouter);
   app.use("/api/posts", postsRouter);
-  app.use("/api/communities", communitiesRouter);
-
   app.use(multerErrorMiddleware);
   app.use(errorHandler);
 

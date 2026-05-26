@@ -1,15 +1,8 @@
 import * as communitiesRepo from "./communities.repository.js";
 import { NotFoundError } from "../../libraries/errors.js";
 
-const DEFAULT_COMMUNITY_ID = 1;
-
 export async function getCurrentCommunity(userId) {
-  let communityId = await communitiesRepo.getUserCommunityId(userId);
-
-  if (!communityId) {
-    await communitiesRepo.assignUserToCommunity(userId, DEFAULT_COMMUNITY_ID);
-    communityId = DEFAULT_COMMUNITY_ID;
-  }
+  const communityId = await communitiesRepo.resolveUserCommunityId(userId);
 
   const community = await communitiesRepo.findCommunityById(communityId);
   if (!community) throw new NotFoundError("Community");
@@ -23,5 +16,3 @@ export async function getCurrentCommunity(userId) {
     postCount: community._count.posts,
   };
 }
-
-export { DEFAULT_COMMUNITY_ID };

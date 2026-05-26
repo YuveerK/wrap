@@ -11,7 +11,6 @@ export const SAFE_USER_SELECT = {
   postalCode: true,
   profilePhoto: true,
   role: true,
-  communityId: true,
   isVerified: true,
   isActive: true,
   createdAt: true,

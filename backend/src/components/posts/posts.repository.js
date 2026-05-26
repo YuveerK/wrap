@@ -11,21 +11,24 @@ const attachmentSelect = {
   createdAt: true,
 };
 
-export async function findPosts(communityId, userId, pinnedFirst = true) {
+export async function findPosts(userId, pinnedFirst = true) {
   const orderBy = pinnedFirst
     ? [{ pinned: "desc" }, { createdAt: "desc" }]
     : [{ createdAt: "desc" }];
 
   return await prisma.post.findMany({
-    where: { communityId },
     select: {
       id: true,
+      category: true,
       title: true,
       body: true,
       pinned: true,
       bannerPath: true,
       likeCount: true,
       commentCount: true,
+      addressText: true,
+      latitude: true,
+      longitude: true,
       createdAt: true,
       updatedAt: true,
       author: { select: SAFE_USER_SELECT },

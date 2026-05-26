@@ -1,11 +1,10 @@
 import path from "node:path";
 import * as postsRepo from "./posts.repository.js";
-import * as communitiesRepo from "../communities/communities.repository.js";
 import { buildPublicMediaUrl } from "../../libraries/media-url.js";
 import { moveToPublic } from "../../multer/utils/move-to-public.js";
 import { cleanupTempFiles } from "../../multer/utils/cleanup-temp-file.js";
 import { validateFileExtension } from "../../multer/validators/validate-file-extension.js";
-import { AppError, ConflictError, NotFoundError } from "../../libraries/errors.js";
+import { AppError, NotFoundError } from "../../libraries/errors.js";
 
 const ALLOWED_EXTENSIONS = [
   ".jpg",
@@ -31,6 +30,7 @@ function formatAttachment(att) {
 function formatPostSummary(post, userId) {
   return {
     id: post.id,
+    category: post.category,
     title: post.title,
     body: post.body,
     pinned: post.pinned,
@@ -39,6 +39,9 @@ function formatPostSummary(post, userId) {
     commentCount: post.commentCount,
     attachmentCount: post._count?.attachments ?? post.attachments?.length ?? 0,
     likedByMe: post.likes?.some((l) => l.userId === userId) ?? false,
+    addressText: post.addressText ?? null,
+    latitude: post.latitude ?? null,
+    longitude: post.longitude ?? null,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
     author: post.author,
@@ -103,15 +106,7 @@ async function processUploadedFiles(files) {
 }
 
 export async function listPosts(userId, { pinnedFirst = true } = {}) {
-  const communityId = await communitiesRepo.getUserCommunityId(userId);
-  if (!communityId) {
-    throw new AppError("Join a community before viewing posts", {
-      status: 403,
-      code: "NO_COMMUNITY",
-    });
-  }
-
-  const posts = await postsRepo.findPosts(communityId, userId, pinnedFirst);
+  const posts = await postsRepo.findPosts(userId, pinnedFirst);
   return posts.map((p) => formatPostSummary(p, userId));
 }
 
@@ -119,24 +114,11 @@ export async function getPostById(userId, postId) {
   const post = await postsRepo.findPostById(postId);
   if (!post) throw new NotFoundError("Post");
 
-  const communityId = await communitiesRepo.getUserCommunityId(userId);
-  if (!communityId || post.communityId !== communityId) {
-    throw new NotFoundError("Post");
-  }
-
   const comments = await postsRepo.findTopLevelComments(postId);
   return formatPostDetail(post, userId, comments);
 }
 
 export async function createPost(userId, role, input, req) {
-  const communityId = await communitiesRepo.getUserCommunityId(userId);
-  if (!communityId) {
-    throw new AppError("Join a community before posting", {
-      status: 403,
-      code: "NO_COMMUNITY",
-    });
-  }
-
   const uploaded = collectUploadedFiles(req);
   let bannerPath = null;
   let attachmentRows = [];
@@ -152,22 +134,21 @@ export async function createPost(userId, role, input, req) {
     const pinned = canPin && input.pinned === true;
 
     const post = await postsRepo.createPost({
-      communityId,
       authorId: userId,
+      category: input.category ?? "NOTICES",
       title: input.title ?? null,
       body: input.body,
       pinned,
       bannerPath,
+      addressText: input.addressText ?? null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
       attachments: attachmentRows.length
         ? { create: attachmentRows }
         : undefined,
     });
 
-    return formatPostDetail(
-      { ...post, likes: [] },
-      userId,
-      [],
-    );
+    return formatPostDetail({ ...post, likes: [] }, userId, []);
   } catch (err) {
     await cleanupTempFiles(uploaded);
     throw err;
@@ -178,40 +159,24 @@ export async function toggleLike(userId, postId) {
   const post = await postsRepo.findPostById(postId);
   if (!post) throw new NotFoundError("Post");
 
-  const communityId = await communitiesRepo.getUserCommunityId(userId);
-  if (!communityId || post.communityId !== communityId) {
-    throw new NotFoundError("Post");
-  }
-
   const existing = await postsRepo.findPostLikedByUser(postId, userId);
 
   if (existing) {
     await postsRepo.removePostLike(postId, userId);
     await postsRepo.incrementLikeCount(postId, -1);
     const updated = await postsRepo.findPostById(postId);
-    return {
-      liked: false,
-      likeCount: Math.max(0, updated.likeCount),
-    };
+    return { liked: false, likeCount: Math.max(0, updated.likeCount) };
   }
 
   await postsRepo.addPostLike(postId, userId);
   await postsRepo.incrementLikeCount(postId, 1);
   const updated = await postsRepo.findPostById(postId);
-  return {
-    liked: true,
-    likeCount: updated.likeCount,
-  };
+  return { liked: true, likeCount: updated.likeCount };
 }
 
 export async function addComment(userId, postId, { body, parentId }) {
   const post = await postsRepo.findPostById(postId);
   if (!post) throw new NotFoundError("Post");
-
-  const communityId = await communitiesRepo.getUserCommunityId(userId);
-  if (!communityId || post.communityId !== communityId) {
-    throw new NotFoundError("Post");
-  }
 
   if (parentId) {
     const parent = await postsRepo.findCommentById(parentId);
@@ -228,6 +193,5 @@ export async function addComment(userId, postId, { body, parentId }) {
   });
 
   await postsRepo.incrementCommentCount(postId);
-
   return comment;
 }
