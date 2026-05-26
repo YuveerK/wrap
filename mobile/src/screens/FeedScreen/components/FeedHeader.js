@@ -1,63 +1,62 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
 
-export function FeedHeader({ communityName, postCount = 0, memberCount = 0 }) {
+export function FeedHeader({ hasUnread = false, onSearch, onNotifications }) {
   const { colors, semantic, isDark } = useTheme();
+  const cardBg = semantic.cardBackground;
+  const shadowColor = isDark ? "#000000" : "#0D1520";
 
   return (
     <View style={styles.container}>
-      <View style={styles.brand}>
-        <View style={[styles.iconBadge, { backgroundColor: colors.primary }]}>
-          <Ionicons name="home" size={20} color="#FFF" />
-        </View>
-        <View style={styles.brandText}>
+      <View style={styles.titleRow}>
+        <View style={styles.titleBlock}>
           <Text style={[styles.eyebrow, { color: colors.primary }]}>
-            Your neighborhood
+            YOUR NEIGHBOURHOOD
           </Text>
-          <Text
-            style={[styles.communityName, { color: colors.text }]}
-            numberOfLines={1}
-          >
-            {communityName ?? "Community"}
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Community</Text>
         </View>
-      </View>
 
-      <View
-        style={[
-          styles.statsRow,
-          { borderTopColor: semantic.footerDivider },
-        ]}
-      >
-        <View style={styles.stat}>
-          <Ionicons
-            name="document-text-outline"
-            size={14}
-            color={colors.textMuted}
-          />
-          <Text style={[styles.statNum, { color: colors.text }]}>
-            {postCount}
-          </Text>
-          <Text style={[styles.statLabel, { color: colors.textMuted }]}>
-            {postCount === 1 ? "post" : "posts"}
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.statDivider,
-            { backgroundColor: isDark ? "#3A4560" : "#DDE2ED" },
-          ]}
-        />
-        <View style={styles.stat}>
-          <Ionicons name="people-outline" size={14} color={colors.textMuted} />
-          <Text style={[styles.statNum, { color: colors.text }]}>
-            {memberCount}
-          </Text>
-          <Text style={[styles.statLabel, { color: colors.textMuted }]}>
-            {memberCount === 1 ? "member" : "members"}
-          </Text>
+        <View style={styles.rightSlot}>
+          <Pressable
+            onPress={onSearch}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              {
+                backgroundColor: cardBg,
+                borderColor: colors.border,
+                shadowColor,
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Search"
+          >
+            <Ionicons name="search-outline" size={20} color={colors.text} />
+          </Pressable>
+
+          <Pressable
+            onPress={onNotifications}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              {
+                backgroundColor: cardBg,
+                borderColor: colors.border,
+                shadowColor,
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <Ionicons name="notifications-outline" size={20} color={colors.text} />
+            {hasUnread ? (
+              <View
+                style={[styles.unreadDot, { backgroundColor: colors.primary }]}
+              />
+            ) : null}
+          </Pressable>
         </View>
       </View>
     </View>
@@ -66,24 +65,17 @@ export function FeedHeader({ communityName, postCount = 0, memberCount = 0 }) {
 
 const styles = StyleSheet.create({
   container: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md + 4,
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
   },
-  brand: {
+  titleRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     gap: spacing.md,
   },
-  iconBadge: {
-    width: 54,
-    height: 54,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandText: {
+  titleBlock: {
     flex: 1,
     gap: 2,
   },
@@ -93,36 +85,39 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: "uppercase",
   },
-  communityName: {
+  title: {
     fontSize: 26,
     fontWeight: "800",
     letterSpacing: -0.8,
     lineHeight: 32,
   },
-  statsRow: {
+  rightSlot: {
     flexDirection: "row",
+    gap: spacing.sm,
+    paddingTop: 4,
+  },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
     alignItems: "center",
-    gap: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
+    justifyContent: "center",
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.07,
+        shadowRadius: 20,
+      },
+      android: { elevation: 3 },
+    }),
   },
-  stat: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  statNum: {
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: -0.2,
-  },
-  statLabel: {
-    fontSize: 13.5,
-    fontWeight: "500",
-  },
-  statDivider: {
-    width: 1,
-    height: 14,
-    borderRadius: 1,
+  unreadDot: {
+    position: "absolute",
+    top: 7,
+    right: 7,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });

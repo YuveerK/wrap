@@ -1,17 +1,17 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import * as communitiesApi from "@/api/communities";
 import * as postsApi from "@/api/posts";
 import { FeedPostCard } from "@/components/FeedPostCard/FeedPostCard";
 import { FeedSkeleton } from "@/components/FeedSkeleton/FeedSkeleton";
@@ -22,21 +22,23 @@ import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
 import { FeedEmptyState } from "./components/FeedEmptyState";
 import { FeedHeader } from "./components/FeedHeader";
-import { styles } from "./FeedScreen.styles";
+
+const CATEGORY_OPTIONS = [
+  { label: "All", value: "all" },
+  { label: "Notices", value: "Notices" },
+  { label: "Safety", value: "Safety" },
+  { label: "Events", value: "Events" },
+  { label: "Lost & Found", value: "Lost & Found" },
+  { label: "Recs", value: "Recommendations" },
+];
 
 export function FeedScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
-  const tabBarHeight = useBottomTabBarHeight();
-  const { colors, semantic } = useTheme();
+  const { colors, semantic, isDark } = useTheme();
   const listBg = semantic.feedListBackground;
-  const listBottomPad = tabBarHeight + 72;
 
-  const communityQuery = useQuery({
-    queryKey: ["community", "current"],
-    queryFn: communitiesApi.fetchCurrentCommunity,
-    staleTime: 1000 * 60 * 5,
-  });
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const postsQuery = useQuery({
     queryKey: ["posts"],
@@ -44,12 +46,20 @@ export function FeedScreen() {
   });
 
   const { data, isLoading, error, refetch, isRefetching, isFetching } = postsQuery;
-  const posts = data?.posts ?? [];
-  const community = communityQuery.data?.community;
+  const allPosts = data?.posts ?? [];
+
+  const posts = useMemo(() => {
+    if (selectedCategory === "all") return allPosts;
+    return allPosts.filter(
+      (p) =>
+        (p.category ?? p.kind ?? "").toLowerCase() ===
+        selectedCategory.toLowerCase(),
+    );
+  }, [allPosts, selectedCategory]);
 
   const pinnedCount = useMemo(
-    () => posts.filter((p) => p.pinned).length,
-    [posts],
+    () => allPosts.filter((p) => p.pinned).length,
+    [allPosts],
   );
 
   const goToCompose = useCallback(() => {
@@ -103,8 +113,10 @@ export function FeedScreen() {
     },
   });
 
-  const showSkeleton = isLoading && posts.length === 0;
-  const showError = error && posts.length === 0 && !showSkeleton;
+  const shadowColor = isDark ? "#000000" : "#0D1520";
+  const cardBg = semantic.cardBackground;
+  const showSkeleton = isLoading && allPosts.length === 0;
+  const showError = error && allPosts.length === 0 && !showSkeleton;
 
   if (showError) {
     return (
@@ -117,16 +129,65 @@ export function FeedScreen() {
     );
   }
 
+  const ListHeader = (
+    <>
+      <FeedHeader />
+
+      {/* Category chip row */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipRow}
+      >
+        {CATEGORY_OPTIONS.map((opt) => {
+          const active = selectedCategory === opt.value;
+          return (
+            <Pressable
+              key={opt.value}
+              onPress={() => setSelectedCategory(opt.value)}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: active ? colors.primary : colors.surface,
+                  borderColor: active ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  { color: active ? "#FFF" : colors.text },
+                ]}
+              >
+                {opt.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Section row */}
+      {allPosts.length > 0 || showSkeleton ? (
+        <View style={styles.sectionRow}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {pinnedCount > 0 ? "Updates" : "Latest"}
+          </Text>
+          {isFetching && !isRefetching ? (
+            <Text style={[styles.syncing, { color: colors.textMuted }]}>
+              Updating…
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </>
+  );
+
   return (
     <Screen edges={["top"]} padded={false} backgroundColor={listBg}>
       <View style={styles.screen}>
         {showSkeleton ? (
           <>
-            <FeedHeader
-              communityName={community?.name}
-              postCount={community?.postCount}
-              memberCount={community?.memberCount}
-            />
+            {ListHeader}
             <FeedSkeleton />
           </>
         ) : (
@@ -135,7 +196,7 @@ export function FeedScreen() {
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={[
               styles.list,
-              { paddingBottom: listBottomPad },
+              { paddingBottom: 80 },
               posts.length === 0 && styles.listEmpty,
             ]}
             showsVerticalScrollIndicator={false}
@@ -147,30 +208,8 @@ export function FeedScreen() {
                 colors={[colors.primary]}
               />
             }
-            ListHeaderComponent={
-              <>
-                <FeedHeader
-                  communityName={community?.name}
-                  postCount={community?.postCount ?? posts.length}
-                  memberCount={community?.memberCount}
-                />
-                {posts.length > 0 ? (
-                  <View style={styles.sectionRow}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      {pinnedCount > 0 ? "Updates" : "Latest"}
-                    </Text>
-                    {isFetching && !isRefetching ? (
-                      <Text style={[styles.syncing, { color: colors.textMuted }]}>
-                        Updating…
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
-              </>
-            }
-            ListEmptyComponent={
-              <FeedEmptyState onCompose={goToCompose} />
-            }
+            ListHeaderComponent={ListHeader}
+            ListEmptyComponent={<FeedEmptyState onCompose={goToCompose} />}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             renderItem={({ item }) => (
               <FeedPostCard
@@ -190,7 +229,7 @@ export function FeedScreen() {
               styles.fab,
               {
                 backgroundColor: colors.primary,
-                bottom: tabBarHeight + spacing.md,
+                bottom: spacing.md,
                 shadowColor: colors.primary,
               },
               pressed && styles.fabPressed,
@@ -205,3 +244,69 @@ export function FeedScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  list: {
+    paddingTop: spacing.sm,
+  },
+  listEmpty: {
+    flexGrow: 1,
+  },
+  chipRow: {
+    gap: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing.sm + 2,
+    paddingHorizontal: spacing.xs,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.4,
+  },
+  syncing: {
+    fontSize: 12.5,
+    fontWeight: "600",
+  },
+  separator: {
+    height: spacing.md,
+  },
+  fab: {
+    position: "absolute",
+    right: spacing.md,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
+      },
+      android: { elevation: 10 },
+    }),
+  },
+  fabPressed: {
+    transform: [{ scale: 0.94 }],
+    opacity: 0.9,
+  },
+});

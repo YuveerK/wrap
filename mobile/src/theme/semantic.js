@@ -12,5 +12,10 @@ export function getSemanticColors(scheme) {
     footerDivider: isDark ? "#2A3450" : "#F0F2F6",
     heroBackground: isDark ? "#1F2937" : "#FFF7ED",
     emptyStateRing: isDark ? "#1F2937" : "#FFF7ED",
+    // Issue status tint — RESOLVED status background (§07 status colour map)
+    success10: isDark ? "rgba(74,222,128,0.14)" : "rgba(22,163,74,0.10)",
+    // Form field chrome
+    inputBorder: isDark ? "#2A3450" : "#E5E7EB",
+    inputBg: isDark ? "#1A2236" : "#FFFFFF",
   };
 }

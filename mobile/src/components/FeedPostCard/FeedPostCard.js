@@ -9,16 +9,17 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { RoleBadge } from "@/components/RoleBadge/RoleBadge";
 import {
   formatRelativeTime,
   getAvatarColor,
   getInitials,
 } from "@/lib/formatRelativeTime";
+import { hexAlpha } from "@/lib/issues";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
 
-const BODY_MAX_LINES = 5;
 const CARD_RADIUS = 22;
 const H_PAD = spacing.md + 4;
 
@@ -28,8 +29,9 @@ const H_PAD = spacing.md + 4;
  * @param {() => void} [props.onPress]
  * @param {() => void} [props.onLike]
  * @param {() => void} [props.onComment]
+ * @param {() => void} [props.onSupport]
  */
-export function FeedPostCard({ post, onPress, onLike, onComment }) {
+export function FeedPostCard({ post, onPress, onLike, onComment, onSupport }) {
   const { colors, semantic, isDark } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -41,7 +43,9 @@ export function FeedPostCard({ post, onPress, onLike, onComment }) {
   const avatarBg = getAvatarColor(seed);
   const isPinned = Boolean(post.pinned);
   const liked = Boolean(post.likedByMe);
+  const supported = Boolean(post.supportedByMe);
   const bannerUri = resolveMediaUrl(post.bannerUrl);
+  const category = post.category ?? post.kind;
 
   const onPressIn = useCallback(() => {
     Animated.spring(scale, {
@@ -63,79 +67,110 @@ export function FeedPostCard({ post, onPress, onLike, onComment }) {
 
   const cardBg = semantic.cardBackground;
   const shadowColor = isDark ? "#000000" : "#0D1520";
+  const supportBg = hexAlpha(colors.primary, 0.12);
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
+      {/* Layer 1 — shadow caster */}
       <View style={[styles.shadow, { shadowColor, backgroundColor: cardBg }]}>
-        <View style={[styles.card, { backgroundColor: cardBg }]}>
+        {/* Layer 2 — content clipper */}
+        <Pressable
+          onPress={onPress}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          style={[styles.card, { backgroundColor: cardBg }]}
+          accessibilityRole="button"
+        >
           {isPinned ? (
-            <View
-              style={[
-                styles.pinnedStrip,
-                { backgroundColor: `${colors.primary}12` },
-              ]}
-            >
-              <Ionicons name="pin" size={11} color={colors.primary} />
-              <Text style={[styles.pinnedLabel, { color: colors.primary }]}>
-                Pinned post
-              </Text>
+            <View style={[styles.pinnedStrip, { backgroundColor: colors.primary }]}>
+              <Ionicons name="pin" size={11} color="#FFFFFF" />
+              <Text style={styles.pinnedLabel}>PINNED BY COMMITTEE</Text>
             </View>
           ) : null}
 
-          {bannerUri ? (
-            <Pressable onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}>
-              <Image source={{ uri: bannerUri }} style={styles.banner} />
-            </Pressable>
-          ) : null}
-
-          <Pressable
-            onPress={onPress}
-            onPressIn={onPressIn}
-            onPressOut={onPressOut}
-            style={styles.tappable}
-          >
-            <View style={styles.authorRow}>
-              <View
-                style={[styles.avatarRing, { borderColor: `${avatarBg}50` }]}
-              >
-                <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
-                  <Text style={styles.initials}>
-                    {getInitials(author?.firstName, author?.lastName)}
-                  </Text>
-                </View>
+          {/* Author row */}
+          <View style={styles.authorRow}>
+            <View style={[styles.avatarRing, { borderColor: `${avatarBg}50` }]}>
+              <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
+                <Text style={styles.initials}>
+                  {getInitials(author?.firstName, author?.lastName)}
+                </Text>
               </View>
-              <View style={styles.authorMeta}>
+            </View>
+            <View style={styles.authorMeta}>
+              <View style={styles.nameRow}>
                 <Text
                   style={[styles.authorName, { color: colors.text }]}
                   numberOfLines={1}
                 >
                   {name}
                 </Text>
-                <Text style={[styles.timestamp, { color: colors.textMuted }]}>
-                  {formatRelativeTime(post.createdAt)}
-                </Text>
+                {author?.role ? <RoleBadge role={author.role} /> : null}
               </View>
-            </View>
-
-            <View style={styles.content}>
-              {post.title ? (
-                <Text style={[styles.title, { color: colors.text }]}>
-                  {post.title}
-                </Text>
-              ) : null}
-              <Text
-                style={[styles.body, { color: semantic.postBodyText }]}
-                numberOfLines={BODY_MAX_LINES}
-              >
-                {post.body}
+              <Text style={[styles.timestamp, { color: colors.textMuted }]}>
+                {formatRelativeTime(post.createdAt)}
               </Text>
             </View>
-          </Pressable>
+            {category ? (
+              <Text style={[styles.categoryEyebrow, { color: colors.textMuted }]}>
+                {String(category).toUpperCase()}
+              </Text>
+            ) : null}
+          </View>
 
-          <View
-            style={[styles.footer, { borderTopColor: semantic.footerDivider }]}
-          >
-            <Pressable style={styles.footerBtn} hitSlop={10} onPress={onLike}>
+          {/* Title + body */}
+          <View style={styles.content}>
+            {post.title ? (
+              <Text
+                style={[styles.title, { color: colors.text }]}
+                numberOfLines={2}
+              >
+                {post.title}
+              </Text>
+            ) : null}
+            <Text
+              style={[styles.body, { color: semantic.postBodyText }]}
+              numberOfLines={3}
+            >
+              {post.body}
+            </Text>
+          </View>
+
+          {/* Optional full-bleed banner image */}
+          {bannerUri ? (
+            <Image source={{ uri: bannerUri }} style={styles.banner} />
+          ) : null}
+
+          {/* Footer */}
+          <View style={[styles.footer, { borderTopColor: semantic.footerDivider }]}>
+            {/* Support */}
+            <Pressable
+              style={[styles.footerBtn, { backgroundColor: supportBg }]}
+              hitSlop={10}
+              onPress={onSupport}
+              accessibilityRole="button"
+              accessibilityLabel="Support this post"
+            >
+              <Ionicons
+                name="arrow-up"
+                size={15}
+                color={colors.primary}
+              />
+              {(post.supportCount ?? 0) > 0 ? (
+                <Text style={[styles.footerCount, { color: colors.primary }]}>
+                  {post.supportCount}
+                </Text>
+              ) : null}
+            </Pressable>
+
+            {/* Like */}
+            <Pressable
+              style={styles.footerBtnOutline}
+              hitSlop={10}
+              onPress={onLike}
+              accessibilityRole="button"
+              accessibilityLabel={liked ? "Unlike" : "Like"}
+            >
               <Ionicons
                 name={liked ? "heart" : "heart-outline"}
                 size={19}
@@ -152,7 +187,15 @@ export function FeedPostCard({ post, onPress, onLike, onComment }) {
                 </Text>
               ) : null}
             </Pressable>
-            <Pressable style={styles.footerBtn} hitSlop={10} onPress={onComment}>
+
+            {/* Comment */}
+            <Pressable
+              style={styles.footerBtnOutline}
+              hitSlop={10}
+              onPress={onComment}
+              accessibilityRole="button"
+              accessibilityLabel="Comment"
+            >
               <Ionicons
                 name="chatbubble-outline"
                 size={17}
@@ -164,9 +207,15 @@ export function FeedPostCard({ post, onPress, onLike, onComment }) {
                 </Text>
               ) : null}
             </Pressable>
+
             <View style={styles.footerSpacer} />
+
+            {/* More */}
+            <Pressable hitSlop={10} accessibilityRole="button" accessibilityLabel="More options">
+              <Ionicons name="ellipsis-horizontal" size={18} color={colors.textMuted} />
+            </Pressable>
           </View>
-        </View>
+        </Pressable>
       </View>
     </Animated.View>
   );
@@ -193,26 +242,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
     paddingHorizontal: H_PAD,
-    paddingVertical: 9,
+    paddingVertical: 7,
   },
   pinnedLabel: {
+    color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
-  banner: {
-    width: "100%",
-    height: 160,
-  },
-  tappable: {},
   authorRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingHorizontal: H_PAD,
-    paddingTop: spacing.md + 2,
-    paddingBottom: 12,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   avatarRing: {
     width: 50,
@@ -237,7 +282,13 @@ const styles = StyleSheet.create({
   },
   authorMeta: {
     flex: 1,
-    gap: 2,
+    gap: 3,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
   },
   authorName: {
     fontSize: 15,
@@ -248,10 +299,17 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: "500",
   },
+  categoryEyebrow: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
   content: {
     paddingHorizontal: H_PAD,
-    paddingBottom: spacing.md,
-    gap: 7,
+    paddingBottom: spacing.sm,
+    gap: 8,
+    marginTop: spacing.sm,
   },
   title: {
     fontSize: 18,
@@ -264,24 +322,37 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     letterSpacing: 0.1,
   },
+  banner: {
+    width: "100%",
+    height: 160,
+  },
   footer: {
     flexDirection: "row",
     alignItems: "center",
-    borderTopWidth: 1,
-    paddingHorizontal: H_PAD - 6,
-    paddingVertical: 10,
+    borderTopWidth: 0.5,
+    paddingHorizontal: H_PAD - 4,
+    paddingVertical: spacing.sm + 2,
+    gap: 6,
   },
   footerBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  footerBtnOutline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     padding: 6,
     borderRadius: 10,
-    marginRight: 6,
   },
   footerCount: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
   footerSpacer: {
     flex: 1,

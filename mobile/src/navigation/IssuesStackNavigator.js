@@ -17,7 +17,7 @@ export function IssuesStackNavigator() {
       <Stack.Screen
         name={SCREENS.IssuesList}
         component={IssuesListScreen}
-        options={{ title: "Issues" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name={SCREENS.IssueDetail}

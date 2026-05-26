@@ -33,7 +33,7 @@ export function FeedStackNavigator() {
       <Stack.Screen
         name={SCREENS.CreatePost}
         component={CreatePostScreen}
-        options={{ title: "New post" }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

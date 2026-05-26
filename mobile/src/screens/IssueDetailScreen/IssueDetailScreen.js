@@ -1,38 +1,39 @@
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { TextInput } from "@/components/TextInput/TextInput";
-import { useRoute } from "@react-navigation/native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import * as issuesApi from "@/api/issues";
 import { ApiError } from "@/api/client";
-import { Button } from "@/components/Button/Button";
-import { KeyboardAwareScrollView } from "@/components/KeyboardAwareScrollView/KeyboardAwareScrollView";
 import { ErrorView } from "@/components/ErrorView/ErrorView";
 import { Loading } from "@/components/Loading/Loading";
 import { Screen } from "@/components/Screen/Screen";
+import { StatusPill } from "@/components/StatusPill/StatusPill";
 import { StatusTimeline } from "@/components/StatusTimeline/StatusTimeline";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  ISSUE_STATUSES,
+  categoryIcons,
   categoryLabels,
-  statusColors,
-  statusLabels,
+  hexAlpha,
+  statusMeta,
 } from "@/lib/issues";
+import {
+  formatRelativeTime,
+  getAvatarColor,
+  getInitials,
+} from "@/lib/formatRelativeTime";
 import { useTheme } from "@/theme";
-import { scrollContentBelowHeader } from "@/theme/screenLayout";
-import { styles } from "./IssueDetailScreen.styles";
+import { spacing } from "@/theme/spacing";
+import { scrollViewStyle } from "@/theme/screenLayout";
+
+const H_PAD = spacing.md + 4;
 
 export function IssueDetailScreen() {
+  const navigation = useNavigation();
   const route = useRoute();
-  /** @type {{ issueId: number }} */
   const { issueId } = route.params;
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { colors } = useTheme();
-  const [actionError, setActionError] = useState("");
-  const [moderatorStatus, setModeratorStatus] = useState(null);
-  const [moderatorNote, setModeratorNote] = useState("");
-
+  const { colors, semantic, isDark } = useTheme();
   const id = Number(issueId);
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -42,39 +43,12 @@ export function IssueDetailScreen() {
   });
 
   const issue = data?.issue;
-  const isModerator =
-    user?.role === "COMMITTEE" || user?.role === "ADMIN";
 
   const supportMutation = useMutation({
     mutationFn: () => issuesApi.supportIssue(id),
     onSuccess: async () => {
-      setActionError("");
       await queryClient.invalidateQueries({ queryKey: ["issue", id] });
       await queryClient.invalidateQueries({ queryKey: ["issues"] });
-    },
-    onError: (err) => {
-      setActionError(
-        err instanceof ApiError ? err.message : "Could not support issue",
-      );
-    },
-  });
-
-  const statusMutation = useMutation({
-    mutationFn: () =>
-      issuesApi.updateIssueStatus(id, {
-        status: moderatorStatus ?? issue?.status,
-        note: moderatorNote.trim() || undefined,
-      }),
-    onSuccess: async () => {
-      setActionError("");
-      setModeratorNote("");
-      await queryClient.invalidateQueries({ queryKey: ["issue", id] });
-      await queryClient.invalidateQueries({ queryKey: ["issues"] });
-    },
-    onError: (err) => {
-      setActionError(
-        err instanceof ApiError ? err.message : "Could not update status",
-      );
     },
   });
 
@@ -105,100 +79,215 @@ export function IssueDetailScreen() {
     );
   }
 
-  const statusColor = statusColors[issue.status] ?? colors.textMuted;
-  const selectedStatus = moderatorStatus ?? issue.status;
+  const category = issue.category ?? issue.kind ?? "OTHER";
+  const categoryLabel = categoryLabels[category] ?? category;
+  const iconName = categoryIcons[category] ?? "alert-circle-outline";
+  const meta = statusMeta[issue.status] ?? { fg: "#6B7280", bgOpacity: 0.12 };
+  const iconBg = hexAlpha(meta.fg, 0.14);
+
+  const reporter = issue.reporter;
+  const reporterName =
+    [reporter?.firstName, reporter?.lastName].filter(Boolean).join(" ") || "Unknown";
+  const reporterSeed = String(reporter?.id ?? reporterName);
+  const reporterAvatarBg = getAvatarColor(reporterSeed);
+
+  const cardBg = semantic.cardBackground;
+  const shadowColor = isDark ? "#000000" : "#0D1520";
 
   return (
     <Screen edges={["bottom"]} padded={false}>
-      <KeyboardAwareScrollView contentContainerStyle={scrollContentBelowHeader}>
-          <Text style={[styles.category, { color: colors.textMuted }]}>
-            {categoryLabels[issue.category] ?? issue.category}
-          </Text>
-          <Text style={[styles.title, { color: colors.text }]}>{issue.title}</Text>
-          <View style={[styles.badge, { backgroundColor: statusColor }]}>
-            <Text style={styles.badgeText}>
-              {statusLabels[issue.status] ?? issue.status}
-            </Text>
+      <ScrollView
+        style={scrollViewStyle}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Status hero row */}
+        <View style={styles.heroRow}>
+          <View style={[styles.heroIcon, { backgroundColor: iconBg }]}>
+            <Ionicons name={iconName} size={24} color={meta.fg} />
           </View>
-          <Text style={[styles.body, { color: colors.text }]}>
-            {issue.description}
-          </Text>
-          {issue.addressText ? (
-            <Text style={[styles.meta, { color: colors.textMuted }]}>
-              {issue.addressText}
+          <View style={styles.heroMeta}>
+            <Text style={[styles.heroEyebrow, { color: colors.textMuted }]}>
+              {categoryLabel.toUpperCase()}
             </Text>
-          ) : null}
-          <Text style={[styles.meta, { color: colors.textMuted }]}>
-            {issue.supportCount} neighbors supported this · reported by{" "}
-            {issue.reporter?.firstName} {issue.reporter?.lastName}
-          </Text>
+            <View style={styles.pillRow}>
+              <StatusPill status={issue.status} />
+            </View>
+          </View>
+        </View>
 
-          <Button
-            title={
-              supportMutation.isPending
-                ? "Supporting…"
-                : `Support (${issue.supportCount})`
-            }
-            onPress={() => supportMutation.mutate()}
-            disabled={supportMutation.isPending}
-            variant="secondary"
-          />
+        {/* Title */}
+        <Text style={[styles.title, { color: colors.text }]}>{issue.title}</Text>
 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Status timeline
-          </Text>
-          <StatusTimeline updates={issue.updates} />
-
-          {isModerator ? (
-            <View style={styles.moderatorBox}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Update status (moderator)
+        {/* Meta block */}
+        <View style={styles.metaBlock}>
+          {issue.addressText ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={15} color={colors.textMuted} />
+              <Text style={[styles.metaText, { color: colors.text }]}>
+                {issue.addressText}
               </Text>
-              <View style={styles.chips}>
-                {ISSUE_STATUSES.map((s) => (
-                  <Pressable
-                    key={s}
-                    onPress={() => setModeratorStatus(s)}
-                    style={[
-                      styles.chip,
-                      {
-                        borderColor: colors.border,
-                        backgroundColor:
-                          selectedStatus === s ? colors.primary : colors.surface,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        color: selectedStatus === s ? "#fff" : colors.text,
-                        fontSize: 12,
-                        fontWeight: "600",
-                      }}
-                    >
-                      {statusLabels[s]}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-              <TextInput
-                label="Note (optional)"
-                value={moderatorNote}
-                onChangeText={setModeratorNote}
-              />
-              <Button
-                title={statusMutation.isPending ? "Saving…" : "Save status"}
-                onPress={() => statusMutation.mutate()}
-                disabled={statusMutation.isPending}
-              />
             </View>
           ) : null}
-
-          {actionError ? (
-            <Text style={[styles.error, { color: colors.danger }]}>
-              {actionError}
+          <View style={styles.metaRow}>
+            <View
+              style={[styles.reporterAvatar, { backgroundColor: reporterAvatarBg }]}
+            >
+              <Text style={styles.reporterInitials}>
+                {getInitials(reporter?.firstName, reporter?.lastName)}
+              </Text>
+            </View>
+            <Text style={[styles.metaText, { color: colors.textMuted }]}>
+              {"Reported by "}
+              <Text style={{ color: colors.text, fontWeight: "700" }}>
+                {reporterName}
+              </Text>
+              {` · ${formatRelativeTime(issue.createdAt)}`}
             </Text>
-          ) : null}
-      </KeyboardAwareScrollView>
+          </View>
+        </View>
+
+        {/* Support / Comment row */}
+        <View style={styles.reactionRow}>
+          <Pressable
+            onPress={() => supportMutation.mutate()}
+            disabled={supportMutation.isPending}
+            style={[
+              styles.reactionBtn,
+              styles.reactionBtnPrimary,
+              { backgroundColor: hexAlpha(colors.primary, 0.12) },
+            ]}
+          >
+            <Ionicons name="arrow-up" size={16} color={colors.primary} />
+            <Text style={[styles.reactionLabel, { color: colors.primary }]}>
+              {`Support · ${issue.supportCount ?? 0}`}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.reactionBtn,
+              { borderWidth: 1, borderColor: colors.border },
+            ]}
+          >
+            <Ionicons name="chatbubble-outline" size={16} color={colors.text} />
+            <Text style={[styles.reactionLabel, { color: colors.text }]}>
+              {`${issue.commentCount ?? 0} comments`}
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* StatusTimeline card — wrapped in shadow */}
+        <View style={[styles.timelineShadow, { shadowColor, backgroundColor: cardBg }]}>
+          <StatusTimeline
+            currentStatus={issue.status}
+            updates={issue.updates}
+          />
+        </View>
+      </ScrollView>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: spacing.xl * 2,
+  },
+  heroRow: {
+    flexDirection: "row",
+    gap: 14,
+    alignItems: "flex-start",
+    paddingHorizontal: H_PAD,
+    paddingTop: spacing.md,
+  },
+  heroIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroMeta: {
+    flex: 1,
+    gap: 4,
+  },
+  heroEyebrow: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  pillRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: -0.8,
+    lineHeight: 30,
+    marginTop: 14,
+    paddingHorizontal: H_PAD,
+  },
+  metaBlock: {
+    gap: 8,
+    marginTop: 14,
+    paddingHorizontal: H_PAD,
+    marginBottom: spacing.md,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  metaText: {
+    fontSize: 14,
+    fontWeight: "400",
+    flex: 1,
+  },
+  reporterAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reporterInitials: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  reactionRow: {
+    flexDirection: "row",
+    gap: 10,
+    flexWrap: "wrap",
+    paddingHorizontal: H_PAD,
+    marginBottom: spacing.lg,
+  },
+  reactionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+  },
+  reactionBtnPrimary: {},
+  reactionLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  timelineShadow: {
+    borderRadius: 22,
+    marginHorizontal: H_PAD,
+    marginBottom: spacing.xl,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.07,
+        shadowRadius: 20,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+});

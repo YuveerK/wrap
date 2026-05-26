@@ -55,10 +55,7 @@ export function MainTabNavigator() {
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}
-        options={{
-          title: "Profile",
-          headerShown: true,
-        }}
+        options={{ title: "Profile", headerShown: false }}
       />
     </Tab.Navigator>
   );

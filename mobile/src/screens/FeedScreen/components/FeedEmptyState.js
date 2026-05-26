@@ -4,17 +4,13 @@ import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
 
 export function FeedEmptyState({ onCompose }) {
-  const { colors, scheme } = useTheme();
-  const isDark = scheme === "dark";
+  const { colors, semantic, isDark } = useTheme();
 
   return (
     <View style={styles.wrap}>
       <View style={styles.iconContainer}>
         <View
-          style={[
-            styles.ring3,
-            { backgroundColor: isDark ? "#1A2638" : "#FEF3EA" },
-          ]}
+          style={[styles.ring3, { backgroundColor: semantic.emptyStateRing }]}
         />
         <View
           style={[
@@ -22,21 +18,17 @@ export function FeedEmptyState({ onCompose }) {
             { backgroundColor: isDark ? "#243347" : "#FDDEBF" },
           ]}
         />
-        <View
-          style={[styles.ring1, { backgroundColor: `${colors.primary}22` }]}
-        />
+        <View style={[styles.ring1, { backgroundColor: `${colors.primary}22` }]} />
         <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
           <Ionicons name="chatbubbles" size={34} color="#FFF" />
         </View>
       </View>
 
       <View style={styles.textBlock}>
-        <Text style={[styles.heading, { color: colors.text }]}>
-          Be the first to share
-        </Text>
+        <Text style={[styles.heading, { color: colors.text }]}>No posts yet</Text>
         <Text style={[styles.sub, { color: colors.textMuted }]}>
-          Road closures, local events, helpful tips — the kind of updates that
-          make your neighborhood better connected.
+          Be the first to start a conversation. Share an update, ask a question,
+          or thank a neighbour.
         </Text>
       </View>
 
@@ -46,9 +38,11 @@ export function FeedEmptyState({ onCompose }) {
           styles.cta,
           { backgroundColor: colors.primary, opacity: pressed ? 0.88 : 1 },
         ]}
+        accessibilityRole="button"
+        accessibilityLabel="Write a post"
       >
         <Ionicons name="create-outline" size={18} color="#FFF" />
-        <Text style={styles.ctaText}>Write the first post</Text>
+        <Text style={styles.ctaText}>Write a post</Text>
       </Pressable>
     </View>
   );
@@ -57,9 +51,9 @@ export function FeedEmptyState({ onCompose }) {
 const styles = StyleSheet.create({
   wrap: {
     alignItems: "center",
-    paddingTop: 64,
-    paddingHorizontal: 36,
-    gap: spacing.xl,
+    paddingVertical: 40,
+    paddingHorizontal: 28,
+    gap: spacing.md,
   },
   iconContainer: {
     width: 128,
@@ -94,18 +88,20 @@ const styles = StyleSheet.create({
   },
   textBlock: {
     alignItems: "center",
-    gap: spacing.sm + 2,
+    gap: spacing.sm,
   },
   heading: {
-    fontSize: 24,
+    fontSize: 19,
     fontWeight: "800",
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
     textAlign: "center",
+    marginTop: 4,
   },
   sub: {
-    fontSize: 15.5,
-    lineHeight: 23,
+    fontSize: 14.5,
+    lineHeight: 22,
     textAlign: "center",
+    maxWidth: 280,
   },
   cta: {
     flexDirection: "row",
@@ -114,6 +110,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl + 4,
     paddingVertical: spacing.md,
     borderRadius: 999,
+    marginTop: 8,
   },
   ctaText: {
     color: "#FFF",
