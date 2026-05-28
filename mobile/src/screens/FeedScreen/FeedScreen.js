@@ -20,6 +20,7 @@ import { Screen } from "@/components/Screen/Screen";
 import { SCREENS } from "@/navigation/params";
 import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
+import { useNotificationsStore } from "@/store/notifications";
 import { FeedEmptyState } from "./components/FeedEmptyState";
 import { FeedHeader } from "./components/FeedHeader";
 
@@ -36,6 +37,8 @@ export function FeedScreen() {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const { colors, semantic, isDark } = useTheme();
+  const hasUnread = useNotificationsStore((s) => s.hasUnread);
+  const setHasUnread = useNotificationsStore((s) => s.setHasUnread);
   const listBg = semantic.feedListBackground;
 
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -131,7 +134,10 @@ export function FeedScreen() {
 
   const ListHeader = (
     <>
-      <FeedHeader />
+      <FeedHeader
+        hasUnread={hasUnread}
+        onNotifications={() => setHasUnread(false)}
+      />
 
       {/* Category chip row */}
       <ScrollView

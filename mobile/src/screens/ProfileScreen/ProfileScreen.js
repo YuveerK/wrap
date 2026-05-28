@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as authApi from "@/api/auth";
 import { ErrorView } from "@/components/ErrorView/ErrorView";
 import { Loading } from "@/components/Loading/Loading";
@@ -76,10 +78,24 @@ function SettingsGroup({ label, items }) {
   );
 }
 
+const NOTIF_PREF_KEY = "notif_pref";
+const NOTIF_PREF_LABELS = {
+  all: "All",
+  "pinned+replies": "Pinned + replies",
+  off: "Off",
+};
+
 export function ProfileScreen() {
   const { user: storeUser, logout } = useAuth();
   const { colors, semantic, preference, setPreference } = useTheme();
   const cardBg = semantic.cardBackground;
+  const [notifPref, setNotifPref] = useState("pinned+replies");
+
+  useEffect(() => {
+    AsyncStorage.getItem(NOTIF_PREF_KEY).then((val) => {
+      if (val && NOTIF_PREF_LABELS[val]) setNotifPref(val);
+    });
+  }, []);
 
   const {
     data: user,
@@ -100,6 +116,23 @@ export function ProfileScreen() {
         { text: "System", onPress: () => setPreference("system") },
         { text: "Light", onPress: () => setPreference("light") },
         { text: "Dark", onPress: () => setPreference("dark") },
+        { text: "Cancel", style: "cancel" },
+      ],
+    );
+  };
+
+  const handleNotificationPrefs = () => {
+    const save = (val) => {
+      AsyncStorage.setItem(NOTIF_PREF_KEY, val);
+      setNotifPref(val);
+    };
+    Alert.alert(
+      "Push notifications",
+      "Choose which notifications you want to receive.",
+      [
+        { text: "All", onPress: () => save("all") },
+        { text: "Pinned + replies", onPress: () => save("pinned+replies") },
+        { text: "Off", onPress: () => save("off"), style: "destructive" },
         { text: "Cancel", style: "cancel" },
       ],
     );
@@ -218,7 +251,12 @@ export function ProfileScreen() {
           <SettingsGroup
             label="NOTIFICATIONS"
             items={[
-              { icon: "notifications-outline", label: "Push notifications", detail: "Pinned + replies" },
+              {
+                icon: "notifications-outline",
+                label: "Push notifications",
+                detail: NOTIF_PREF_LABELS[notifPref] ?? "Pinned + replies",
+                onPress: handleNotificationPrefs,
+              },
               { icon: "mail-outline", label: "Email digest", detail: "Weekly" },
               { icon: "warning-outline", label: "Safety alerts", detail: "Always on", lock: true },
             ]}
