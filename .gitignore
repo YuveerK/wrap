@@ -1,0 +1,17 @@
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Service account and credential files
+*service-account*.json
+*serviceAccount*.json
+*service-account-key*.json
+*serviceAccountKey*.json
+firebase-adminsdk-*.json
+google-services.json
+GoogleService-Info.plist
+*.p8
+*.p12
+*.jks
+*.keystore
