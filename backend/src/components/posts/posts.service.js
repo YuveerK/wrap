@@ -5,6 +5,7 @@ import { moveToPublic } from "../../multer/utils/move-to-public.js";
 import { cleanupTempFiles } from "../../multer/utils/cleanup-temp-file.js";
 import { validateFileExtension } from "../../multer/validators/validate-file-extension.js";
 import { AppError, NotFoundError } from "../../libraries/errors.js";
+import { sendPushNotifications } from "../notifications/notifications.service.js";
 
 const ALLOWED_EXTENSIONS = [
   ".jpg",
@@ -178,9 +179,10 @@ export async function addComment(userId, postId, { body, parentId }) {
   const post = await postsRepo.findPostById(postId);
   if (!post) throw new NotFoundError("Post");
 
+  let parentComment = null;
   if (parentId) {
-    const parent = await postsRepo.findCommentById(parentId);
-    if (!parent || parent.postId !== postId) {
+    parentComment = await postsRepo.findCommentById(parentId);
+    if (!parentComment || parentComment.postId !== postId) {
       throw new NotFoundError("Comment");
     }
   }
@@ -193,5 +195,25 @@ export async function addComment(userId, postId, { body, parentId }) {
   });
 
   await postsRepo.incrementCommentCount(postId);
+
+  // Fire-and-forget: notify post author and/or parent comment author
+  const authorName = [comment.author?.firstName, comment.author?.lastName]
+    .filter(Boolean)
+    .join(" ") || "Someone";
+
+  const recipientIds = new Set();
+  if (post.author.id !== userId) recipientIds.add(post.author.id);
+  if (parentComment && parentComment.authorId !== userId) {
+    recipientIds.add(parentComment.authorId);
+  }
+
+  if (recipientIds.size > 0) {
+    sendPushNotifications([...recipientIds], {
+      title: "New reply on Wrap",
+      body: `${authorName} commented on your post`,
+      data: { screen: "PostDetail", id: postId },
+    }).catch(() => {});
+  }
+
   return comment;
 }

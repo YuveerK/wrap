@@ -94,7 +94,7 @@ export async function incrementLikeCount(postId, delta) {
 export async function findCommentById(id) {
   return await prisma.postComment.findUnique({
     where: { id },
-    select: { id: true, postId: true, parentId: true },
+    select: { id: true, postId: true, parentId: true, authorId: true },
   });
 }
 

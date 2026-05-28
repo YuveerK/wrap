@@ -1,6 +1,7 @@
 import { IssueStatus } from "@prisma/client";
 import * as issuesRepo from "./issues.repository.js";
 import { ConflictError, NotFoundError } from "../../libraries/errors.js";
+import { sendPushNotifications } from "../notifications/notifications.service.js";
 
 export async function listIssues(userId, filters) {
   return await issuesRepo.findIssues(filters);
@@ -49,7 +50,8 @@ export async function supportIssue(userId, issueId) {
 export async function addIssueUpdate(userId, issueId, { status, note }) {
   const issue = await getIssueById(userId, issueId);
 
-  if (status && status !== issue.status) {
+  const statusChanged = status && status !== issue.status;
+  if (statusChanged) {
     await issuesRepo.updateIssueStatus(issueId, status);
   }
 
@@ -60,19 +62,41 @@ export async function addIssueUpdate(userId, issueId, { status, note }) {
     note,
   });
 
-  return await issuesRepo.findIssueById(issueId);
+  const updated = await issuesRepo.findIssueById(issueId);
+
+  if (statusChanged && issue.reporter.id !== userId) {
+    const label = status.replace(/_/g, " ").toLowerCase();
+    sendPushNotifications([issue.reporter.id], {
+      title: "Issue update on Wrap",
+      body: `Your report is now ${label}`,
+      data: { screen: "IssueDetail", id: issueId },
+    }).catch(() => {});
+  }
+
+  return updated;
 }
 
 export async function updateIssueStatus(userId, issueId, { status, note }) {
-  await getIssueById(userId, issueId);
+  const issue = await getIssueById(userId, issueId);
   await issuesRepo.updateIssueStatus(issueId, status);
 
   await issuesRepo.createIssueUpdate({
     issueId,
     authorId: userId,
     status,
-    note: note ?? `Status changed to ${status.replace("_", " ").toLowerCase()}`,
+    note: note ?? `Status changed to ${status.replace(/_/g, " ").toLowerCase()}`,
   });
 
-  return await issuesRepo.findIssueById(issueId);
+  const updated = await issuesRepo.findIssueById(issueId);
+
+  if (issue.reporter.id !== userId) {
+    const label = status.replace(/_/g, " ").toLowerCase();
+    sendPushNotifications([issue.reporter.id], {
+      title: "Issue update on Wrap",
+      body: `Your report is now ${label}`,
+      data: { screen: "IssueDetail", id: issueId },
+    }).catch(() => {});
+  }
+
+  return updated;
 }

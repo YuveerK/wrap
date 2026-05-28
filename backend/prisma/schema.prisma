@@ -57,6 +57,7 @@ model User {
   resetTokenExpiry  DateTime?
 
   refreshTokens  RefreshToken[]
+  pushTokens     PushToken[]
   issuesReported Issue[]        @relation("IssueReporter")
   issueUpdates   IssueUpdate[]
   issueSupports  IssueSupport[]
@@ -193,4 +194,16 @@ model PostComment {
 
   @@index([postId, createdAt])
   @@index([parentId])
+}
+
+model PushToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
