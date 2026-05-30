@@ -38,6 +38,7 @@ export async function createPost(req, res, next) {
         addressText: parsed.data.addressText?.trim() || undefined,
         latitude: parsed.data.latitude,
         longitude: parsed.data.longitude,
+        suburb: parsed.data.suburb?.trim() || undefined,
       },
       req,
     );

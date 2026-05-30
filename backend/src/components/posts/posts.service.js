@@ -5,6 +5,7 @@ import { moveToPublic } from "../../multer/utils/move-to-public.js";
 import { cleanupTempFiles } from "../../multer/utils/cleanup-temp-file.js";
 import { validateFileExtension } from "../../multer/validators/validate-file-extension.js";
 import { AppError, NotFoundError } from "../../libraries/errors.js";
+import { isAllowedSuburb } from "../../libraries/suburbs.js";
 import { sendPushNotifications } from "../notifications/notifications.service.js";
 
 const ALLOWED_EXTENSIONS = [
@@ -129,6 +130,13 @@ export async function createPost(userId, role, input, req) {
       const processed = await processUploadedFiles(uploaded);
       bannerPath = processed.bannerPath;
       attachmentRows = processed.attachments;
+    }
+
+    if (input.suburb && !isAllowedSuburb(input.suburb)) {
+      throw new AppError(`${input.suburb} is outside the WJRA service area.`, {
+        status: 422,
+        code: "SUBURB_NOT_ALLOWED",
+      });
     }
 
     const canPin = role === "COMMITTEE" || role === "ADMIN";

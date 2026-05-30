@@ -19,6 +19,7 @@ export const createPostBodySchema = z.object({
   addressText: z.string().max(200).optional(),
   latitude: z.coerce.number().min(-90).max(90).optional(),
   longitude: z.coerce.number().min(-180).max(180).optional(),
+  suburb: z.string().max(100).optional(),
 });
 
 export const createPostSchema = z.object({
@@ -29,6 +30,7 @@ export const createPostSchema = z.object({
   addressText: z.string().max(200).optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
+  suburb: z.string().max(100).optional(),
 });
 
 export const listPostsQuerySchema = z.object({

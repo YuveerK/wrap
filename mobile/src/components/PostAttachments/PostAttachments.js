@@ -1,69 +1,78 @@
-import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { MediaGrid } from "@/components/MediaGrid/MediaGrid";
+import { MediaViewer } from "@/components/MediaViewer/MediaViewer";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
 
 /**
- * @param {Object} props
- * @param {Array<{ id: number, url: string, mimeType: string, originalName?: string }>} props.attachments
+ * @param {{ attachments: Array<{ id: number, url: string, mimeType: string, originalName?: string }> }} props
  */
 export function PostAttachments({ attachments }) {
   const { colors } = useTheme();
+  const [viewerIndex, setViewerIndex] = useState(null);
 
   if (!attachments?.length) return null;
 
+  const imageAttachments = attachments.filter((a) => a.mimeType?.startsWith("image/"));
+  const fileAttachments  = attachments.filter((a) => !a.mimeType?.startsWith("image/"));
+
+  const gridImages = imageAttachments
+    .map((a) => ({ uri: resolveMediaUrl(a.url) }))
+    .filter((a) => Boolean(a.uri));
+
   return (
     <View style={styles.wrap}>
-      {attachments.map((att) => {
-        const url = resolveMediaUrl(att.url);
-        const isImage = att.mimeType?.startsWith("image/");
+      {gridImages.length > 0 ? (
+        <MediaGrid
+          images={gridImages}
+          onImagePress={(index) => setViewerIndex(index)}
+        />
+      ) : null}
 
-        if (isImage && url) {
-          return (
-            <Image
-              key={att.id}
-              source={{ uri: url }}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          );
-        }
+      {fileAttachments.length > 0 ? (
+        <View style={styles.files}>
+          {fileAttachments.map((att) => {
+            const url = resolveMediaUrl(att.url);
+            return (
+              <Pressable
+                key={att.id}
+                onPress={() => url && Linking.openURL(url)}
+                style={[
+                  styles.fileRow,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
+                <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+                <Text style={[styles.fileName, { color: colors.text }]} numberOfLines={1}>
+                  {att.originalName ?? "Attachment"}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
 
-        return (
-          <Pressable
-            key={att.id}
-            onPress={() => url && Linking.openURL(url)}
-            style={[
-              styles.fileRow,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <Ionicons
-              name="document-text-outline"
-              size={22}
-              color={colors.primary}
-            />
-            <Text style={[styles.fileName, { color: colors.text }]} numberOfLines={1}>
-              {att.originalName ?? "Attachment"}
-            </Text>
-          </Pressable>
-        );
-      })}
+      <MediaViewer
+        images={gridImages}
+        initialIndex={viewerIndex ?? 0}
+        visible={viewerIndex !== null}
+        onClose={() => setViewerIndex(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md + 4,
-    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
   },
-  image: {
-    width: "100%",
-    height: 160,
-    borderRadius: 12,
+  files: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
   },
   fileRow: {
     flexDirection: "row",
