@@ -25,7 +25,8 @@ This document is the single source of truth for all visual and interaction decis
 17. [Navigation Patterns](#17-navigation-patterns)
 18. [Issue & Status System](#18-issue--status-system)
 19. [Utility Functions](#19-utility-functions)
-20. [Do & Don't](#20-do--dont)
+20. [2026 Mobile UI/UX Patterns](#20-2026-mobile-uiux-patterns)
+21. [Do & Don't](#21-do--dont)
 
 ---
 
@@ -54,31 +55,31 @@ import { useTheme } from "@/theme";
 const { colors, scheme } = useTheme();
 ```
 
-| Token         | Light           | Dark      | Usage |
-|---------------|-----------------|-----------|-------|
-| `primary`     | `#FF8A08`       | `#FF8A08` | CTAs, FABs, active tabs, accent highlights |
-| `background`  | `#FFFFFF`       | `#111827` | Screen/page background |
-| `surface`     | `#F5F5F5`       | `#1F2937` | Cards, inputs, secondary containers |
-| `text`        | `#222831`       | `#F9FAFB` | Primary body & heading text |
-| `textMuted`   | `#6B7280`       | `#9CA3AF` | Labels, timestamps, secondary info |
-| `border`      | `#E5E7EB`       | `#374151` | Dividers, input borders, separator lines |
-| `danger`      | `#DC2626`       | `#F87171` | Errors, destructive actions |
-| `success`     | `#16A34A`       | `#4ADE80` | Confirmation, resolved states |
+| Token        | Light     | Dark      | Usage                                      |
+| ------------ | --------- | --------- | ------------------------------------------ |
+| `primary`    | `#FF8A08` | `#FF8A08` | CTAs, FABs, active tabs, accent highlights |
+| `background` | `#FFFFFF` | `#111827` | Screen/page background                     |
+| `surface`    | `#F5F5F5` | `#1F2937` | Cards, inputs, secondary containers        |
+| `text`       | `#222831` | `#F9FAFB` | Primary body & heading text                |
+| `textMuted`  | `#6B7280` | `#9CA3AF` | Labels, timestamps, secondary info         |
+| `border`     | `#E5E7EB` | `#374151` | Dividers, input borders, separator lines   |
+| `danger`     | `#DC2626` | `#F87171` | Errors, destructive actions                |
+| `success`    | `#16A34A` | `#4ADE80` | Confirmation, resolved states              |
 
 ### 2.2 Semantic Overrides (intentional raw values)
 
 These are documented exceptions where a raw hex is acceptable because they must remain constant across both colour schemes or don't map to a theme token.
 
-| Context | Value | Reason |
-|---|---|---|
-| Feed list background (light) | `#F5F7FB` | Slightly cooler than `background` to contrast white cards |
-| Card background (dark) | `#1A2236` | Deeper than `surface` for stronger card depth in dark mode |
-| Post body text (light) | `#374151` | Slightly softer than `text` for long-form reading comfort |
-| Post body text (dark) | `#B8C4D8` | Lower contrast than `text` for comfortable dark-mode reading |
-| Pinned strip background | `` `${colors.primary}12` `` | 7% opacity orange tint — always relative to primary |
-| Avatar ring border | `` `${avatarBg}50` `` | 31% opacity of the avatar's own colour — always relative |
-| Footer divider (dark) | `#2A3450` | Between `surface` and card bg — no theme token for this depth |
-| Footer divider (light) | `#F0F2F6` | Subtler than `border` inside white cards |
+| Context                      | Value                       | Reason                                                        |
+| ---------------------------- | --------------------------- | ------------------------------------------------------------- |
+| Feed list background (light) | `#F5F7FB`                   | Slightly cooler than `background` to contrast white cards     |
+| Card background (dark)       | `#1A2236`                   | Deeper than `surface` for stronger card depth in dark mode    |
+| Post body text (light)       | `#374151`                   | Slightly softer than `text` for long-form reading comfort     |
+| Post body text (dark)        | `#B8C4D8`                   | Lower contrast than `text` for comfortable dark-mode reading  |
+| Pinned strip background      | `` `${colors.primary}12` `` | 7% opacity orange tint — always relative to primary           |
+| Avatar ring border           | `` `${avatarBg}50` ``       | 31% opacity of the avatar's own colour — always relative      |
+| Footer divider (dark)        | `#2A3450`                   | Between `surface` and card bg — no theme token for this depth |
+| Footer divider (light)       | `#F0F2F6`                   | Subtler than `border` inside white cards                      |
 
 ### 2.3 Avatar Colour Palette
 
@@ -118,29 +119,29 @@ Defined in `src/theme/typography.js`. Import with:
 import { typography } from "@/theme";
 ```
 
-| Token | Size | Weight | Use |
-|---|---|---|---|
-| `title` | 24 px | 700 | Screen headings |
-| `subtitle` | 18 px | 600 | Section headings, card titles |
-| `body` | 16 px | 400 | Default body copy |
-| `caption` | 14 px | 400 | Labels, meta info |
+| Token      | Size  | Weight | Use                           |
+| ---------- | ----- | ------ | ----------------------------- |
+| `title`    | 24 px | 700    | Screen headings               |
+| `subtitle` | 18 px | 600    | Section headings, card titles |
+| `body`     | 16 px | 400    | Default body copy             |
+| `caption`  | 14 px | 400    | Labels, meta info             |
 
 ### 3.2 Extended Scale (in-component)
 
 When the token scale is insufficient, use these documented extensions. Do not invent new values without adding them here.
 
-| Use | Size | Weight | Letter-spacing | Line-height |
-|---|---|---|---|---|
-| Community name (header) | 26 px | 800 | −0.8 | 32 |
-| Post title | 18 px | 800 | −0.6 | 26 |
-| Section title | 20 px | 800 | −0.4 | — |
-| Author name | 15 px | 700 | −0.1 | — |
-| Eyebrow / label | 11.5 px | 700 | +1.0 | — |
-| Timestamp | 12.5 px | 500 | — | — |
-| Pinned badge text | 11 px | 700 | +0.8 | — |
-| Stat value | 14 px | 700 | −0.2 | — |
-| Post body | 15 px | 400 | +0.1 | 23 |
-| CTA button text | 16 px | 700 | −0.2 | — |
+| Use                     | Size    | Weight | Letter-spacing | Line-height |
+| ----------------------- | ------- | ------ | -------------- | ----------- |
+| Community name (header) | 26 px   | 800    | −0.8           | 32          |
+| Post title              | 18 px   | 800    | −0.6           | 26          |
+| Section title           | 20 px   | 800    | −0.4           | —           |
+| Author name             | 15 px   | 700    | −0.1           | —           |
+| Eyebrow / label         | 11.5 px | 700    | +1.0           | —           |
+| Timestamp               | 12.5 px | 500    | —              | —           |
+| Pinned badge text       | 11 px   | 700    | +0.8           | —           |
+| Stat value              | 14 px   | 700    | −0.2           | —           |
+| Post body               | 15 px   | 400    | +0.1           | 23          |
+| CTA button text         | 16 px   | 700    | −0.2           | —           |
 
 ### 3.3 Rules
 
@@ -160,40 +161,40 @@ Defined in `src/theme/spacing.js`. Import with:
 import { spacing } from "@/theme";
 ```
 
-| Token | Value | Common uses |
-|---|---|---|
-| `xs` | 4 px | Icon-to-text gap, tight internal gaps |
-| `sm` | 8 px | Stack gap between related elements, list item separators |
-| `md` | 16 px | Default horizontal screen padding, card internal padding |
-| `lg` | 24 px | Section bottom padding, large vertical breathing room |
-| `xl` | 32 px | Between major sections, empty state gaps |
-| `xxl` | 48 px | Top padding of empty/error states |
+| Token | Value | Common uses                                              |
+| ----- | ----- | -------------------------------------------------------- |
+| `xs`  | 4 px  | Icon-to-text gap, tight internal gaps                    |
+| `sm`  | 8 px  | Stack gap between related elements, list item separators |
+| `md`  | 16 px | Default horizontal screen padding, card internal padding |
+| `lg`  | 24 px | Section bottom padding, large vertical breathing room    |
+| `xl`  | 32 px | Between major sections, empty state gaps                 |
+| `xxl` | 48 px | Top padding of empty/error states                        |
 
 ### Derived Values
 
 Some components use arithmetic on the base scale. Document these, never guess:
 
-| Context | Value | Formula |
-|---|---|---|
-| Card horizontal padding | 20 px | `spacing.md + 4` |
-| FAB from bottom | `tabBarHeight + spacing.md` | Dynamic — always relative to tab bar |
-| List bottom padding | `tabBarHeight + 72` | Accounts for FAB clearance |
-| Section title margin bottom | 10 px | `spacing.sm + 2` |
+| Context                     | Value                       | Formula                              |
+| --------------------------- | --------------------------- | ------------------------------------ |
+| Card horizontal padding     | 20 px                       | `spacing.md + 4`                     |
+| FAB from bottom             | `tabBarHeight + spacing.md` | Dynamic — always relative to tab bar |
+| List bottom padding         | `tabBarHeight + 72`         | Accounts for FAB clearance           |
+| Section title margin bottom | 10 px                       | `spacing.sm + 2`                     |
 
 ---
 
 ## 5. Border Radius
 
-| Value | Usage |
-|---|---|
-| 8 px | Inputs, skeleton bones, small UI chips |
-| 10 px | IssueCard, small content cards |
-| 14 px | Status timeline dots area, small icon badges |
-| 17 px | Community icon badge in FeedHeader |
-| 22 px | FeedPostCard (the canonical large card radius) |
-| 25 px | Avatar outer ring (half of 50 px diameter) |
-| 30 px | FAB (half of 60 px diameter) |
-| 31 px | Empty state icon circle (half of 62 px diameter) |
+| Value  | Usage                                             |
+| ------ | ------------------------------------------------- |
+| 8 px   | Inputs, skeleton bones, small UI chips            |
+| 10 px  | IssueCard, small content cards                    |
+| 14 px  | Status timeline dots area, small icon badges      |
+| 17 px  | Community icon badge in FeedHeader                |
+| 22 px  | FeedPostCard (the canonical large card radius)    |
+| 25 px  | Avatar outer ring (half of 50 px diameter)        |
+| 30 px  | FAB (half of 60 px diameter)                      |
+| 31 px  | Empty state icon circle (half of 62 px diameter)  |
 | 999 px | Pill buttons, stat chips, category selector chips |
 
 **Rule:** `borderRadius: 999` is the canonical "pill" shape. Never use an arbitrarily large number like `100` or `50` for pill shapes — use `999`.
@@ -243,13 +244,15 @@ shadowColor: colors.primary,
 **Critical for iOS:** `overflow: "hidden"` clips iOS shadows. Use a two-layer structure whenever a card needs both a visible shadow AND internal content that must be clipped to the border radius (e.g., a full-bleed strip inside a rounded card).
 
 ```jsx
-{/* Outer: casts the shadow, no overflow clipping */}
+{
+  /* Outer: casts the shadow, no overflow clipping */
+}
 <View style={[styles.shadow, { shadowColor, backgroundColor: cardBg }]}>
   {/* Inner: clips children to border radius */}
   <Pressable style={[styles.card, { backgroundColor: cardBg }]}>
     {/* content */}
   </Pressable>
-</View>
+</View>;
 ```
 
 ```js
@@ -277,42 +280,42 @@ import { Ionicons } from "@expo/vector-icons";
 
 ### 7.1 Standard Icon Sizes
 
-| Size | Context |
-|---|---|
-| 11–12 px | Inline badges (pinned label icon) |
-| 14 px | Stat row icons, small metadata |
-| 17–19 px | Footer action icons |
-| 20 px | Header icon badge, tab icons (inactive) |
-| 22–24 px | Tab icons (active), main action icons |
-| 26 px | FAB icon |
-| 34–36 px | Empty state feature icon |
-| 40 px | Large feature icons (inside ring containers) |
+| Size     | Context                                      |
+| -------- | -------------------------------------------- |
+| 11–12 px | Inline badges (pinned label icon)            |
+| 14 px    | Stat row icons, small metadata               |
+| 17–19 px | Footer action icons                          |
+| 20 px    | Header icon badge, tab icons (inactive)      |
+| 22–24 px | Tab icons (active), main action icons        |
+| 26 px    | FAB icon                                     |
+| 34–36 px | Empty state feature icon                     |
+| 40 px    | Large feature icons (inside ring containers) |
 
 ### 7.2 Standard Icon Colours
 
-| Colour | Use |
-|---|---|
-| `colors.primary` | Active tab, accent/pinned icons, eyebrow icon |
-| `colors.textMuted` | Footer actions, stat icons, secondary metadata |
-| `"#FFFFFF"` | Icons on coloured backgrounds (FAB, avatar, icon badges) |
+| Colour             | Use                                                      |
+| ------------------ | -------------------------------------------------------- |
+| `colors.primary`   | Active tab, accent/pinned icons, eyebrow icon            |
+| `colors.textMuted` | Footer actions, stat icons, secondary metadata           |
+| `"#FFFFFF"`        | Icons on coloured backgrounds (FAB, avatar, icon badges) |
 
 ### 7.3 Icon Reference
 
-| Icon name | Where used |
-|---|---|
-| `home` | Community header icon badge |
-| `people` / `people-outline` | Member count stat |
-| `document-text-outline` | Post count stat |
-| `newspaper` / `newspaper-outline` | Feed tab |
-| `alert-circle` / `alert-circle-outline` | Issues tab |
-| `person` / `person-outline` | Profile tab |
-| `pin` | Pinned post badge |
-| `heart-outline` | Post like action |
-| `chatbubble-outline` | Post comment action |
-| `share-social-outline` | Post share action |
-| `create` | FAB (compose) |
-| `create-outline` | Empty state CTA |
-| `chatbubbles` | Feed empty state feature icon |
+| Icon name                               | Where used                    |
+| --------------------------------------- | ----------------------------- |
+| `home`                                  | Community header icon badge   |
+| `people` / `people-outline`             | Member count stat             |
+| `document-text-outline`                 | Post count stat               |
+| `newspaper` / `newspaper-outline`       | Feed tab                      |
+| `alert-circle` / `alert-circle-outline` | Issues tab                    |
+| `person` / `person-outline`             | Profile tab                   |
+| `pin`                                   | Pinned post badge             |
+| `heart-outline`                         | Post like action              |
+| `chatbubble-outline`                    | Post comment action           |
+| `share-social-outline`                  | Post share action             |
+| `create`                                | FAB (compose)                 |
+| `create-outline`                        | Empty state CTA               |
+| `chatbubbles`                           | Feed empty state feature icon |
 
 Always use the `outline` variant for non-active/secondary states and the filled variant for active/primary states (matching the tab bar pattern).
 
@@ -380,8 +383,7 @@ The ring border colour is the avatar background at 31% opacity (`${avatarBg}50` 
 
 ```js
 const name =
-  [author?.firstName, author?.lastName].filter(Boolean).join(" ") ||
-  "Neighbor";
+  [author?.firstName, author?.lastName].filter(Boolean).join(" ") || "Neighbor";
 ```
 
 Always fall back to `"Neighbor"` — never an empty string or `"Unknown"`.
@@ -428,6 +430,7 @@ const onPressOut = useCallback(() => {
 ```
 
 **Parameters:**
+
 - `toValue: 0.982` — subtle 1.8% shrink. Feels tactile without being dramatic.
 - `tension: 400` — stiff spring for fast response.
 - `friction: 20` — enough damping to prevent bounce.
@@ -464,8 +467,16 @@ function usePulse() {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(anim, { toValue: 1, duration: 700, useNativeDriver: false }),
-        Animated.timing(anim, { toValue: 0, duration: 700, useNativeDriver: false }),
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: false,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 700,
+          useNativeDriver: false,
+        }),
       ]),
     );
     loop.start();
@@ -536,14 +547,14 @@ import { Screen } from "@/components/Screen/Screen";
 
 <Screen edges={["top"]} padded={false} backgroundColor={listBg}>
   {/* content */}
-</Screen>
+</Screen>;
 ```
 
-| Prop | Default | Notes |
-|---|---|---|
-| `edges` | — | Pass `["top"]` for screens with a custom header; pass `["top", "bottom"]` for full safe area. |
-| `padded` | `true` | Set `false` for full-bleed lists; handle padding per-section. |
-| `backgroundColor` | `colors.background` | Override for screens that need a different background (e.g., feed list). |
+| Prop              | Default             | Notes                                                                                         |
+| ----------------- | ------------------- | --------------------------------------------------------------------------------------------- |
+| `edges`           | —                   | Pass `["top"]` for screens with a custom header; pass `["top", "bottom"]` for full safe area. |
+| `padded`          | `true`              | Set `false` for full-bleed lists; handle padding per-section.                                 |
+| `backgroundColor` | `colors.background` | Override for screens that need a different background (e.g., feed list).                      |
 
 ### 11.2 Feed / List Screen Layout
 
@@ -613,14 +624,14 @@ Used by Login, ForgotPassword, etc.
 <Button
   title="Save changes"
   onPress={handleSave}
-  variant="primary"     // "primary" | "secondary" — default: "primary"
+  variant="primary" // "primary" | "secondary" — default: "primary"
   disabled={false}
 />
 ```
 
-| Variant | Background | Text colour | Border |
-|---|---|---|---|
-| `primary` | `colors.primary` | `#FFFFFF` | None |
+| Variant     | Background       | Text colour   | Border               |
+| ----------- | ---------------- | ------------- | -------------------- |
+| `primary`   | `colors.primary` | `#FFFFFF`     | None                 |
 | `secondary` | `colors.surface` | `colors.text` | 1 px `colors.border` |
 
 - Border radius: 8 px
@@ -652,7 +663,7 @@ The mandatory root wrapper for all screens. Handles safe-area insets via `react-
   label="Email address"
   value={email}
   onChangeText={setEmail}
-  error="Invalid email"   // optional — shows below input in danger colour
+  error="Invalid email" // optional — shows below input in danger colour
   keyboardType="email-address"
   // all standard RN TextInput props are forwarded
 />
@@ -694,14 +705,11 @@ Always use `FormField` (not bare `TextInput`) inside `react-hook-form` forms.
 Displays the community identity and aggregate stats. Used as the `ListHeaderComponent` in the feed.
 
 ```jsx
-<FeedHeader
-  communityName="Riverside Estate"
-  postCount={24}
-  memberCount={156}
-/>
+<FeedHeader communityName="Riverside Estate" postCount={24} memberCount={156} />
 ```
 
 **Anatomy:**
+
 1. Brand row: 54×54 px orange icon badge (border radius 17) + eyebrow + community name
 2. Divider line (1 px, `borderTopColor` semantic override)
 3. Stats row: `[icon] [number] [label]` pairs separated by a 1×14 px vertical rule
@@ -717,6 +725,7 @@ The primary content surface of the app.
 ```
 
 **Post object shape:**
+
 ```ts
 {
   id: number,
@@ -729,6 +738,7 @@ The primary content surface of the app.
 ```
 
 **Anatomy (top to bottom):**
+
 1. **Pinned strip** (conditional): full-bleed tinted row with pin icon + "Pinned post" label
 2. **Author row**: avatar ring → initials circle → author name + timestamp
 3. **Content**: optional title → body (5-line clamp)
@@ -736,6 +746,7 @@ The primary content surface of the app.
 5. **Action row**: heart, comment, share icons with `hitSlop: 10`
 
 **Structure rules:**
+
 - Uses the shadow wrapper pattern (§6.3)
 - `overflow: "hidden"` is on the inner `Pressable`, not the shadow `View`
 - All content padding is `H_PAD = spacing.md + 4 = 20 px` (defined as a constant)
@@ -762,6 +773,7 @@ Uses the `usePulse` hook (§9.3) for animated bone shimmer. Colours adapt to the
 ```
 
 **Anatomy:**
+
 - Layered concentric rings (128 → 100 → 78 px) with increasing orange tint
 - 62 px solid orange icon circle at centre
 - 24 px / 800 weight heading
@@ -777,7 +789,10 @@ Uses the `usePulse` hook (§9.3) for animated bone shimmer. Colours adapt to the
 **Location:** `src/components/IssueCard/IssueCard.js`
 
 ```jsx
-<IssueCard issue={issue} onPress={() => navigate(SCREENS.IssueDetail, { issueId: issue.id })} />
+<IssueCard
+  issue={issue}
+  onPress={() => navigate(SCREENS.IssueDetail, { issueId: issue.id })}
+/>
 ```
 
 - Border radius: 10 px
@@ -892,7 +907,7 @@ Use for full-screen loading (e.g., auth check on app start). For in-list loading
 ```jsx
 <ErrorView
   message="Failed to load posts"
-  onRetry={() => refetch()}   // optional
+  onRetry={() => refetch()} // optional
 />
 ```
 
@@ -953,7 +968,7 @@ tabBarIcon: ({ focused }) => (
     size={focused ? 24 : 22}
     color={focused ? colors.primary : colors.textMuted}
   />
-)
+);
 ```
 
 Active: filled icon, `colors.primary`, 24 px.
@@ -973,17 +988,17 @@ Never use raw string route names.
 
 ### 17.4 Deep Link Routes
 
-| URL path | Screen |
-|---|---|
-| `/feed` | FeedScreen |
-| `/feed/new` | CreatePostScreen |
-| `/issues` | IssuesListScreen |
-| `/issues/:issueId` | IssueDetailScreen |
-| `/issues/new` | CreateIssueScreen |
-| `/login` | LoginScreen |
-| `/register` | RegisterScreen |
-| `/forgot-password` | ForgotPasswordScreen |
-| `/reset-password/:token` | ResetPasswordScreen |
+| URL path                 | Screen               |
+| ------------------------ | -------------------- |
+| `/feed`                  | FeedScreen           |
+| `/feed/new`              | CreatePostScreen     |
+| `/issues`                | IssuesListScreen     |
+| `/issues/:issueId`       | IssueDetailScreen    |
+| `/issues/new`            | CreateIssueScreen    |
+| `/login`                 | LoginScreen          |
+| `/register`              | RegisterScreen       |
+| `/forgot-password`       | ForgotPasswordScreen |
+| `/reset-password/:token` | ResetPasswordScreen  |
 
 ---
 
@@ -991,13 +1006,13 @@ Never use raw string route names.
 
 ### 18.1 Issue Statuses
 
-| Status | Colour | Meaning |
-|---|---|---|
-| `REPORTED` | `#6B7280` | Submitted by resident, not yet reviewed |
-| `ACKNOWLEDGED` | `#2563EB` | Seen by committee |
-| `IN_PROGRESS` | `#D97706` | Actively being worked on |
-| `RESOLVED` | `#16A34A` | Completed |
-| `CLOSED` | `#374151` | Closed without resolution |
+| Status         | Colour    | Meaning                                 |
+| -------------- | --------- | --------------------------------------- |
+| `REPORTED`     | `#6B7280` | Submitted by resident, not yet reviewed |
+| `ACKNOWLEDGED` | `#2563EB` | Seen by committee                       |
+| `IN_PROGRESS`  | `#D97706` | Actively being worked on                |
+| `RESOLVED`     | `#16A34A` | Completed                               |
+| `CLOSED`       | `#374151` | Closed without resolution               |
 
 ### 18.2 Issue Categories
 
@@ -1014,11 +1029,11 @@ Import labels from `@/lib/issues`.
 
 ### 18.3 User Roles
 
-| Role | Capabilities |
-|---|---|
-| `RESIDENT` | View feed, create posts, view & support issues |
+| Role        | Capabilities                                                |
+| ----------- | ----------------------------------------------------------- |
+| `RESIDENT`  | View feed, create posts, view & support issues              |
 | `COMMITTEE` | All resident capabilities + update issue status + add notes |
-| `ADMIN` | All committee capabilities + user management |
+| `ADMIN`     | All committee capabilities + user management                |
 
 Moderator-only UI (status chip selector, note input) is shown when `user.role === "COMMITTEE" || user.role === "ADMIN"`.
 
@@ -1054,6 +1069,7 @@ Returns `"?"` when both arguments are falsy.
 ### 19.4 API Client
 
 All API calls go through `@/api/client` which handles:
+
 - Auth token injection
 - Token refresh on 401
 - JSON serialisation
@@ -1078,65 +1094,455 @@ const { data, isLoading, error, refetch, isRefetching, isFetching } = useQuery({
 
 ---
 
-## 20. Do & Don't
+## 20. 2026 Mobile UI/UX Patterns
 
-### Typography
+The strongest mobile UX patterns in 2026 are not about chasing every visual trend. They are about **native-feeling interaction, accessibility by default, fast task completion, trustworthy AI assistance, and interfaces that adapt without becoming unpredictable**.
 
-| Do | Don't |
-|---|---|
-| Use tokens from §3 | Invent new `fontSize` values mid-component |
-| Set `lineHeight` for body text | Leave `lineHeight` unset on text longer than one line |
-| Use `fontWeight: "800"` for headings | Use `fontWeight: "900"` (rarely renders differently on iOS) |
-| Use `letterSpacing: -0.6` for large headings | Use positive letter-spacing on large headings |
+Use this section as the default decision guide when designing new Wrap screens.
 
-### Colour
+### 20.1 2026 Product Principle
 
-| Do | Don't |
-|---|---|
-| Access colour via `useTheme()` | Hard-code `#FFFFFF` as a text colour on a card |
-| Use `colors.primary` only for CTAs and key accents | Use orange as a general decoration colour |
-| Use the documented semantic overrides | Add new raw hex values without documenting them in §2.2 |
+**Design deeper before designing louder.**
 
-### Layout
+For Wrap, this means:
 
-| Do | Don't |
-|---|---|
-| Use `spacing.*` tokens for all margins and gaps | Use arbitrary numbers like `margin: 12` |
-| Account for tab bar height in scroll padding | Let content hide behind the tab bar |
-| Use `H_PAD = spacing.md + 4` inside cards | Mix different horizontal padding values inside one card |
+- Keep neighbourhood content, issue reporting, and community actions easier to complete than they are on WhatsApp.
+- Use visual polish to support hierarchy, not to create decoration.
+- Prefer familiar mobile patterns over novelty unless the new pattern clearly reduces friction.
+- Make every important action understandable without onboarding.
+- Treat accessibility, performance, offline recovery, and privacy as product quality, not optional enhancements.
 
-### Shadows
+### 20.2 Touch, Reach, and One-Handed Use
 
-| Do | Don't |
-|---|---|
-| Use the shadow wrapper pattern for cards with clipped content | Put `overflow: "hidden"` on the same view that has iOS shadow props |
-| Set `shadowColor` on the shadow wrapper layer | Set `shadowColor` on the inner clipped view |
-| Use `elevation: 3` for cards, `elevation: 10` for FAB | Use the same elevation level for everything |
+Mobile screens are larger, but most people still interact one-handed. Design for thumbs, interruptions, and imperfect taps.
 
-### Interactions
+#### Minimum Touch Targets
 
-| Do | Don't |
-|---|---|
-| Use `Animated.spring` with `tension: 400, friction: 20` | Use `Animated.timing` for press animations |
-| Set `useNativeDriver: true` for transform/opacity | Animate `backgroundColor` with `useNativeDriver: true` |
-| Give small icon buttons `hitSlop={10}` | Leave small touch targets without hit slop |
+| Platform / standard          |                         Minimum | Wrap rule                                   |
+| ---------------------------- | ------------------------------: | ------------------------------------------- |
+| iOS hit region               |                      44 × 44 pt | Never ship an interactive target below this |
+| Android touch target         |                      48 × 48 dp | Use this as the cross-platform default      |
+| WCAG 2.2 minimum target size | 24 × 24 CSS px, with exceptions | Treat this as the floor, not the ideal      |
 
-### Icons
+**Wrap standard:**
 
-| Do | Don't |
-|---|---|
-| Use `Ionicons` exclusively | Mix icon libraries (FontAwesome, MaterialIcons, etc.) |
-| Use `outline` variant for secondary/inactive states | Use filled icons for secondary states |
-| Colour icons with `colors.primary` or `colors.textMuted` | Use custom hex colours for icon tint |
+```js
+const TOUCH_TARGET = 48;
+const ICON_HIT_SLOP = 10;
+```
 
-### Dark Mode
+Use `hitSlop={10}` for small icon buttons and make custom `Pressable` rows at least 48 px tall.
 
-| Do | Don't |
-|---|---|
-| Test every new component in both light and dark mode | Only test in one mode |
-| Use `isDark` only for the documented semantic overrides | Branch on `isDark` for colours that have theme tokens |
-| Use `colors.background` for screen backgrounds | Hard-code `"#FFFFFF"` as a screen background |
+```jsx
+<Pressable
+  hitSlop={10}
+  style={{
+    minWidth: 48,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  }}
+>
+  <Ionicons name="share-social-outline" size={19} color={colors.textMuted} />
+</Pressable>
+```
+
+#### Thumb-Zone Rules
+
+- Put frequent actions in the lower half of the screen where possible.
+- Keep destructive actions away from accidental thumb zones, or require confirmation.
+- Floating actions must not cover list content, tab bars, snackbars, or keyboard actions.
+- Avoid placing primary actions only in the top-right corner on long screens.
+- For long forms, use sticky bottom actions only when they do not hide the final field.
+
+### 20.3 Navigation Patterns for 2026
+
+Navigation should be visible, predictable, and shallow.
+
+#### Bottom Tabs
+
+Use bottom tabs when the app has **3–5 persistent top-level destinations**.
+
+For Wrap, the default tab structure remains:
+
+| Tab     | Purpose                             |
+| ------- | ----------------------------------- |
+| Feed    | Community updates and announcements |
+| Issues  | Reported problems and progress      |
+| Profile | User/account context                |
+
+Rules:
+
+- Always show both icon and label for primary tabs.
+- Use the filled icon for the active tab and outline icon for inactive tabs.
+- Do not hide core destinations behind a hamburger menu.
+- Do not add a tab for a one-off workflow.
+- Consider a Search tab only if search becomes a core, repeated behaviour across posts, issues, residents, or documents.
+
+#### FAB
+
+Use a FAB for one dominant contextual action only.
+
+Good:
+
+```txt
+Feed       → Create post
+Issues     → Report issue
+```
+
+Avoid:
+
+```txt
+FAB opens 5 unrelated actions
+FAB duplicates an obvious primary button
+FAB floats above form fields while the keyboard is open
+```
+
+#### Sheets and Overlays
+
+Use bottom sheets for temporary, focused choices:
+
+- Category selection
+- Filter options
+- Sort options
+- Quick moderation actions
+- Share/report menus
+
+Do not use a sheet for complex multi-step forms. Navigate to a full screen instead.
+
+### 20.4 Content-First Layouts
+
+Users open Wrap to know what is happening in their community. The UI should get out of the way.
+
+#### Feed and Issue Lists
+
+- Use cards for distinct content objects only.
+- Avoid card-inside-card layouts.
+- Keep author, time, title, body, and action hierarchy consistent across every feed card.
+- Use section headers to orient users, not decorative banners.
+- Keep body text readable before showing actions.
+- Prefer progressive disclosure: show summary first, detail on tap.
+
+#### Density
+
+Design for **comfortable density**, not empty luxury.
+
+- Community feeds can be slightly dense, but never cramped.
+- Important issue cards should expose status, category, and last update without requiring a tap.
+- Use dividers sparingly inside cards; spacing should do most separation work.
+- Do not use multiple accent colours to manufacture hierarchy.
+
+### 20.5 Depth, Glass, Blur, and Modern Surfaces
+
+In 2026, platform design is moving toward more layered, dynamic surfaces. Apple’s iOS 26 Liquid Glass direction makes translucent navigation and adaptive materials more common, while Material Design continues to emphasise structured surfaces, accessibility, and clear hierarchy.
+
+For Wrap:
+
+- Use depth to clarify layers, not to imitate a trend.
+- Keep content surfaces solid and readable.
+- Use blur/glass-style effects only for navigation chrome, floating controls, or temporary overlays.
+- Never put long-form text directly on a translucent/glass background.
+- Always provide enough contrast in both light and dark mode.
+- Avoid heavy glassmorphism on Android unless it still feels native and passes accessibility checks.
+- Do not add blur effects that reduce performance on older devices.
+
+#### Approved Layer Model
+
+| Layer   | Examples                           | Visual treatment                              |
+| ------- | ---------------------------------- | --------------------------------------------- |
+| Base    | Screen background, list background | Flat, quiet, adaptive theme token             |
+| Surface | Cards, inputs, sheets              | Solid surface, radius, optional subtle border |
+| Raised  | FAB, sticky toolbar, active modal  | Stronger elevation, clear purpose             |
+| Overlay | Dialogs, bottom sheets, menus      | Dim backdrop, focused action area             |
+
+### 20.6 Forms and Input UX
+
+Forms should feel short even when the data is detailed.
+
+#### Form Rules
+
+- Ask only what is needed for the current task.
+- Group related fields into clear sections.
+- Use native keyboard types (`email-address`, `phone-pad`, `numeric`) where appropriate.
+- Use autofill hints where supported.
+- Validate after blur or submit, not aggressively on every keystroke.
+- Preserve user input after failed submission.
+- Disable submit while loading.
+- Never show two loaders for one submission.
+- Do not make users re-enter information the app already knows.
+
+#### OTP and Authentication
+
+For OTP screens:
+
+- Use one visible OTP input pattern that supports paste.
+- Auto-focus the OTP input after the email/code request succeeds.
+- Show resend cooldown clearly.
+- Explain expiry and retry limits in plain language.
+- Do not use puzzles, memory tests, or unnecessary cognitive challenges for authentication.
+- Always provide a clear way to change the email/phone number if the user entered it incorrectly.
+
+#### Long Forms
+
+For long forms such as registration or issue reporting:
+
+- Use step-by-step grouping when the form exceeds one screen.
+- Show progress only if there are multiple real steps.
+- Save partial progress where possible.
+- Use review screens for high-impact submissions.
+- Use confirmation dialogs for destructive or public actions.
+
+### 20.7 Feedback, Loading, Offline, and Recovery
+
+A modern mobile app should always tell users what is happening and how to recover.
+
+#### Loading
+
+Use the existing state decision tree in §16.4 and extend it with:
+
+| Situation                  | Pattern                                             |
+| -------------------------- | --------------------------------------------------- |
+| First load, no data        | Skeleton                                            |
+| Pull-to-refresh            | Native refresh spinner                              |
+| Background refetch         | Small “Updating…” text                              |
+| Button submission          | Disabled button with loading label                  |
+| Slow upload                | Progress indicator with cancel/retry where possible |
+| Empty result after filters | Empty state with “Clear filters” action             |
+
+#### Optimistic Updates
+
+Use optimistic UI only when the action is easy to undo or low-risk.
+
+Good:
+
+- Like/support an issue
+- Save a post draft locally
+- Toggle a filter chip
+
+Avoid optimistic updates for:
+
+- Public posts
+- Issue status changes
+- Moderation actions
+- Profile/security changes
+- Payments or billing
+
+#### Offline UX
+
+Wrap is community-focused, so weak connectivity should be expected.
+
+- Show cached feed/issues when available.
+- Display a small offline banner rather than replacing the whole screen.
+- Queue low-risk drafts locally.
+- Clearly mark unsent items.
+- Provide retry actions.
+- Never pretend an action succeeded if it is still queued.
+
+### 20.8 Motion and Microinteractions
+
+Motion should communicate cause and effect.
+
+Use animation for:
+
+- Press feedback
+- Screen transitions
+- Sheet open/close
+- Success confirmation
+- Skeleton loading
+- Pull-to-refresh
+- Expanding/collapsing content
+
+Avoid animation for:
+
+- Decorative background movement
+- Constant attention-grabbing loops
+- Long transitions that block action
+- Effects that reduce readability
+
+Rules:
+
+- Respect reduced-motion settings where possible.
+- Keep press animations under the existing spring standard in §9.
+- Animate transform and opacity with `useNativeDriver: true`.
+- Do not animate layout-heavy lists unnecessarily.
+- Use haptics sparingly for important completion or warning moments only.
+
+### 20.9 AI-Assisted UX Patterns
+
+AI features are useful only when they reduce effort without reducing user control.
+
+In Wrap, AI may be appropriate for:
+
+- Suggesting an issue category from a description.
+- Summarising a long community post.
+- Rewriting a post to be clearer before publishing.
+- Detecting duplicate issue reports.
+- Suggesting a title for an issue.
+- Highlighting missing information before submission.
+
+AI must not:
+
+- Auto-publish posts without user confirmation.
+- Auto-report issues without review.
+- Make moderation decisions without a human override.
+- Hide uncertainty.
+- Replace clear navigation with a chatbot.
+- Generate content that looks official unless it is approved by a committee/admin.
+
+#### AI Interaction Pattern
+
+```txt
+User enters content
+→ AI suggests improvement/category/summary
+→ User reviews
+→ User edits or accepts
+→ User submits manually
+```
+
+UI requirements:
+
+- Label AI-generated suggestions clearly.
+- Provide “Use suggestion”, “Edit”, and “Dismiss”.
+- Preserve the user’s original text.
+- Do not block the workflow if AI fails.
+- Keep AI suggestions short and actionable.
+- Never make AI the only way to complete a task.
+
+### 20.10 Accessibility-First Mobile Design
+
+Accessibility is now a baseline requirement for mobile quality.
+
+Checklist for every new screen:
+
+- [ ] All touch targets are at least 48 × 48 px/dp where practical
+- [ ] Icon-only buttons have accessible labels
+- [ ] Screen-reader order matches the visual order
+- [ ] Text supports device font scaling where practical
+- [ ] Colour is not the only way to communicate status
+- [ ] Focus is not hidden behind sticky headers, tab bars, sheets, or keyboards
+- [ ] Dragging/swiping interactions have tap alternatives
+- [ ] Motion-based interactions have non-motion alternatives
+- [ ] Error messages explain how to fix the issue
+- [ ] Forms do not require users to re-enter previously supplied information
+- [ ] Empty/error/loading states are reachable and understandable by screen readers
+
+#### Gesture Alternatives
+
+Any gesture-driven action must have a visible alternative.
+
+| Gesture         | Required alternative                        |
+| --------------- | ------------------------------------------- |
+| Swipe to delete | Visible delete button/menu action           |
+| Drag to reorder | Move up/down actions or edit mode           |
+| Pull to refresh | Refresh button in error/empty states        |
+| Long press menu | Visible overflow/menu button                |
+| Pinch/zoom      | Plus/minus or reset controls where relevant |
+
+### 20.11 Privacy, Trust, and Permissions
+
+Community apps handle sensitive local information. Trust is part of UX.
+
+- Request permissions just-in-time, not at app launch.
+- Explain why a permission is needed before triggering the native prompt.
+- Do not ask for location unless the feature truly needs it.
+- Make public/private visibility obvious before posting.
+- Show who can see a post, issue, comment, or profile detail.
+- Confirm before publishing sensitive information.
+- Avoid dark patterns such as forced opt-ins, hidden unsubscribe paths, or confusing notification settings.
+- Notifications must be useful, local, and controllable.
+
+### 20.12 Pattern Decision Matrix
+
+| Need                       | Use                            | Avoid                             |
+| -------------------------- | ------------------------------ | --------------------------------- |
+| 3–5 top-level destinations | Bottom tabs                    | Hamburger menu for core areas     |
+| One primary screen action  | FAB                            | Multiple competing FAB actions    |
+| Temporary choice           | Bottom sheet                   | Full screen for tiny option lists |
+| Complex creation flow      | Full screen form               | Modal with cramped fields         |
+| Repeated filtering         | Filter chips + sheet           | Hidden advanced filters only      |
+| Long content               | Summary + detail screen        | Overloaded card                   |
+| First-load waiting         | Skeleton                       | Blank screen with spinner only    |
+| Background refresh         | Subtle “Updating…” label       | Replacing visible content         |
+| AI assistance              | Suggestion + user confirmation | Auto-action without review        |
+| Destructive action         | Confirmation + clear wording   | Accidental thumb-zone action      |
+| Weak connectivity          | Cached data + retry            | Fake success state                |
+
+### 20.13 Sources Reviewed
+
+Use these as external references when updating this section in future:
+
+- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)
+- [Apple Human Interface Guidelines — Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility)
+- [Apple Developer — Adopting Liquid Glass](https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass)
+- [Apple Developer — Buttons](https://developer.apple.com/design/human-interface-guidelines/buttons)
+- [Android Developers — Make apps more accessible](https://developer.android.com/guide/topics/ui/accessibility/apps)
+- [Material Design 3 — Accessibility structure](https://m3.material.io/foundations/designing/structure)
+- [Material Design 3 — Navigation bar accessibility](https://m3.material.io/components/navigation-bar/accessibility)
+- [W3C — Guidance on Applying WCAG 2.2 to Mobile Applications](https://www.w3.org/TR/wcag2mobile-22/)
+- [W3C — Understanding WCAG 2.2 Target Size Minimum](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
+- [Nielsen Norman Group — State of UX in 2026](https://www.nngroup.com/articles/state-of-ux-2026/)
 
 ---
 
-*Last updated: May 2026. Update this document whenever a new token, component, or pattern is introduced.*
+## 21. Do & Don't
+
+### Typography
+
+| Do                                           | Don't                                                       |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| Use tokens from §3                           | Invent new `fontSize` values mid-component                  |
+| Set `lineHeight` for body text               | Leave `lineHeight` unset on text longer than one line       |
+| Use `fontWeight: "800"` for headings         | Use `fontWeight: "900"` (rarely renders differently on iOS) |
+| Use `letterSpacing: -0.6` for large headings | Use positive letter-spacing on large headings               |
+
+### Colour
+
+| Do                                                 | Don't                                                   |
+| -------------------------------------------------- | ------------------------------------------------------- |
+| Access colour via `useTheme()`                     | Hard-code `#FFFFFF` as a text colour on a card          |
+| Use `colors.primary` only for CTAs and key accents | Use orange as a general decoration colour               |
+| Use the documented semantic overrides              | Add new raw hex values without documenting them in §2.2 |
+
+### Layout
+
+| Do                                              | Don't                                                   |
+| ----------------------------------------------- | ------------------------------------------------------- |
+| Use `spacing.*` tokens for all margins and gaps | Use arbitrary numbers like `margin: 12`                 |
+| Account for tab bar height in scroll padding    | Let content hide behind the tab bar                     |
+| Use `H_PAD = spacing.md + 4` inside cards       | Mix different horizontal padding values inside one card |
+
+### Shadows
+
+| Do                                                            | Don't                                                               |
+| ------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Use the shadow wrapper pattern for cards with clipped content | Put `overflow: "hidden"` on the same view that has iOS shadow props |
+| Set `shadowColor` on the shadow wrapper layer                 | Set `shadowColor` on the inner clipped view                         |
+| Use `elevation: 3` for cards, `elevation: 10` for FAB         | Use the same elevation level for everything                         |
+
+### Interactions
+
+| Do                                                      | Don't                                                  |
+| ------------------------------------------------------- | ------------------------------------------------------ |
+| Use `Animated.spring` with `tension: 400, friction: 20` | Use `Animated.timing` for press animations             |
+| Set `useNativeDriver: true` for transform/opacity       | Animate `backgroundColor` with `useNativeDriver: true` |
+| Give small icon buttons `hitSlop={10}`                  | Leave small touch targets without hit slop             |
+
+### Icons
+
+| Do                                                       | Don't                                                 |
+| -------------------------------------------------------- | ----------------------------------------------------- |
+| Use `Ionicons` exclusively                               | Mix icon libraries (FontAwesome, MaterialIcons, etc.) |
+| Use `outline` variant for secondary/inactive states      | Use filled icons for secondary states                 |
+| Colour icons with `colors.primary` or `colors.textMuted` | Use custom hex colours for icon tint                  |
+
+### Dark Mode
+
+| Do                                                      | Don't                                                 |
+| ------------------------------------------------------- | ----------------------------------------------------- |
+| Test every new component in both light and dark mode    | Only test in one mode                                 |
+| Use `isDark` only for the documented semantic overrides | Branch on `isDark` for colours that have theme tokens |
+| Use `colors.background` for screen backgrounds          | Hard-code `"#FFFFFF"` as a screen background          |
+
+---
+
+_Last updated: 30 May 2026. Update this document whenever a new token, component, or pattern is introduced._
