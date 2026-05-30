@@ -24,6 +24,7 @@ import { SCREENS } from "@/navigation/params";
 import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
 import { scrollContentBelowHeader } from "@/theme/screenLayout";
+import { LocationPickerModal } from "@/screens/CreatePostScreen/LocationPickerModal";
 
 const H_PAD = spacing.md + 4;
 
@@ -42,11 +43,14 @@ export function CreateIssueScreen() {
   const { colors, semantic } = useTheme();
   const [formError, setFormError] = useState("");
   const [photo, setPhoto] = useState(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [pickedLocation, setPickedLocation] = useState(null);
 
   const {
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(createIssueSchema),
@@ -68,6 +72,9 @@ export function CreateIssueScreen() {
         title: values.title.trim(),
         description: values.description.trim(),
         addressText: values.addressText?.trim() || undefined,
+        latitude: pickedLocation?.latitude,
+        longitude: pickedLocation?.longitude,
+        suburb: pickedLocation?.suburb ?? undefined,
       }),
     onSuccess: async (res) => {
       await queryClient.invalidateQueries({ queryKey: ["issues"] });
@@ -227,7 +234,7 @@ export function CreateIssueScreen() {
           <Controller
             control={control}
             name="addressText"
-            render={({ field: { value, onChange, onBlur } }) => (
+            render={({ field: { value } }) => (
               <View
                 style={[
                   styles.locationContainer,
@@ -235,15 +242,17 @@ export function CreateIssueScreen() {
                 ]}
               >
                 <Ionicons name="location-outline" size={18} color={colors.primary} />
-                <RNTextInput
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  placeholder="Enter location"
-                  placeholderTextColor={colors.textMuted}
-                  style={[styles.locationInput, { color: colors.text }]}
-                />
+                <Text
+                  style={[
+                    styles.locationText,
+                    { color: value ? colors.text : colors.textMuted },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {value || "Tap 'Use map' to set location"}
+                </Text>
                 <Pressable
+                  onPress={() => setShowMapPicker(true)}
                   style={[
                     styles.useMapBtn,
                     { backgroundColor: hexAlpha(colors.primary, 0.12) },
@@ -321,6 +330,16 @@ export function CreateIssueScreen() {
           </Text>
         </Pressable>
       </KeyboardAwareScrollView>
+
+      <LocationPickerModal
+        visible={showMapPicker}
+        onConfirm={(loc) => {
+          setPickedLocation({ latitude: loc.latitude, longitude: loc.longitude, suburb: loc.suburb ?? null });
+          setValue("addressText", loc.addressText, { shouldValidate: true });
+          setShowMapPicker(false);
+        }}
+        onClose={() => setShowMapPicker(false)}
+      />
     </Screen>
   );
 }
@@ -383,10 +402,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  locationInput: {
+  locationText: {
     flex: 1,
     fontSize: 15,
     fontWeight: "500",
+    lineHeight: 20,
   },
   useMapBtn: {
     paddingHorizontal: 10,

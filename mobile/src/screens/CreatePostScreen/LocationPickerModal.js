@@ -13,6 +13,7 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
+import { isAllowedSuburb } from "@/lib/suburbs";
 
 const DEFAULT_REGION = {
   latitude: -33.9249,
@@ -27,6 +28,8 @@ export function LocationPickerModal({ visible, onConfirm, onClose }) {
   const regionRef = useRef(DEFAULT_REGION);
 
   const [address, setAddress] = useState("");
+  const [suburb, setSuburb] = useState(null);
+  const [suburbError, setSuburbError] = useState("");
   const [locating, setLocating] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
@@ -85,14 +88,20 @@ export function LocationPickerModal({ visible, onConfirm, onClose }) {
     setGeocoding(true);
     try {
       const results = await Location.reverseGeocodeAsync({ latitude, longitude });
+      console.log('[reverseGeocode]', JSON.stringify(results?.[0], null, 2));
       const r = results?.[0];
       if (r) {
         const parts = [r.name, r.street, r.city ?? r.subregion, r.region]
           .filter(Boolean)
           .filter((v, i, a) => a.indexOf(v) === i);
         setAddress(parts.join(", ") || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+        const rawSuburb = r.district ?? null;
+        setSuburb(rawSuburb);
+        setSuburbError("");
       } else {
         setAddress(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+        setSuburb(null);
+        setSuburbError("");
       }
     } catch {
       setAddress(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
@@ -104,6 +113,7 @@ export function LocationPickerModal({ visible, onConfirm, onClose }) {
   const handleRegionChange = () => {
     setDragging(true);
     setAddress("");
+    setSuburbError("");
   };
 
   const handleRegionChangeComplete = (newRegion) => {
@@ -113,10 +123,17 @@ export function LocationPickerModal({ visible, onConfirm, onClose }) {
   };
 
   const handleConfirm = () => {
+    if (suburb && !isAllowedSuburb(suburb)) {
+      setSuburbError(
+        `${suburb} is outside the WJRA service area. Move the pin to a covered suburb.`
+      );
+      return;
+    }
     onConfirm({
       latitude: regionRef.current.latitude,
       longitude: regionRef.current.longitude,
       addressText: address,
+      suburb: suburb ?? null,
     });
     handleClose();
   };
@@ -230,12 +247,19 @@ export function LocationPickerModal({ visible, onConfirm, onClose }) {
             size={18}
             color={colors.primary}
           />
-          <Text
-            style={[styles.addressLabel, { color: dragging ? colors.textMuted : colors.text }]}
-            numberOfLines={2}
-          >
-            {footerLabel}
-          </Text>
+          <View style={styles.addressTextWrap}>
+            <Text
+              style={[styles.addressLabel, { color: dragging ? colors.textMuted : colors.text }]}
+              numberOfLines={2}
+            >
+              {footerLabel}
+            </Text>
+            {suburbError ? (
+              <Text style={[styles.suburbError, { color: colors.danger }]}>
+                {suburbError}
+              </Text>
+            ) : null}
+          </View>
         </View>
       </View>
     </Modal>
@@ -326,17 +350,25 @@ const styles = StyleSheet.create({
   },
   addressBar: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderTopWidth: 0.5,
-    minHeight: 64,
+    minHeight: 84,
+  },
+  addressTextWrap: {
+    flex: 1,
+    gap: 4,
   },
   addressLabel: {
-    flex: 1,
     fontSize: 14,
     fontWeight: "500",
     lineHeight: 20,
+  },
+  suburbError: {
+    fontSize: 12,
+    fontWeight: "500",
+    lineHeight: 16,
   },
 });
