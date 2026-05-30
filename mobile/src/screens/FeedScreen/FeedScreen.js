@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import * as postsApi from "@/api/posts";
@@ -23,6 +24,7 @@ import { spacing } from "@/theme/spacing";
 import { useNotificationsStore } from "@/store/notifications";
 import { FeedEmptyState } from "./components/FeedEmptyState";
 import { FeedHeader } from "./components/FeedHeader";
+import { FilteredEmptyState } from "./components/FilteredEmptyState";
 
 const CATEGORY_OPTIONS = [
   { label: "All", value: "all" },
@@ -48,6 +50,7 @@ export function FeedScreen() {
     queryFn: postsApi.listPosts,
   });
 
+  const tabBarHeight = useBottomTabBarHeight();
   const { data, isLoading, error, refetch, isRefetching, isFetching } = postsQuery;
   const allPosts = data?.posts ?? [];
 
@@ -134,15 +137,19 @@ export function FeedScreen() {
 
   const ListHeader = (
     <>
-      <FeedHeader
-        hasUnread={hasUnread}
-        onNotifications={() => setHasUnread(false)}
-      />
+      {/* FeedHeader breaks out of the list's horizontal padding */}
+      <View style={styles.headerOutset}>
+        <FeedHeader
+          hasUnread={hasUnread}
+          onNotifications={() => setHasUnread(false)}
+        />
+      </View>
 
-      {/* Category chip row */}
+      {/* Category chip row — full-width scroll, content padded to align with list */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.chipOutset}
         contentContainerStyle={styles.chipRow}
       >
         {CATEGORY_OPTIONS.map((opt) => {
@@ -151,11 +158,16 @@ export function FeedScreen() {
             <Pressable
               key={opt.value}
               onPress={() => setSelectedCategory(opt.value)}
-              style={[
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter by ${opt.label}`}
+              accessibilityState={{ selected: active }}
+              style={({ pressed }) => [
                 styles.chip,
                 {
                   backgroundColor: active ? colors.primary : colors.surface,
                   borderColor: active ? colors.primary : colors.border,
+                  opacity: pressed ? 0.75 : 1,
                 },
               ]}
             >
@@ -172,7 +184,7 @@ export function FeedScreen() {
         })}
       </ScrollView>
 
-      {/* Section row */}
+      {/* Section row — inherits list's horizontal padding */}
       {allPosts.length > 0 || showSkeleton ? (
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -202,7 +214,7 @@ export function FeedScreen() {
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={[
               styles.list,
-              { paddingBottom: 80 },
+              { paddingBottom: tabBarHeight + 72 },
               posts.length === 0 && styles.listEmpty,
             ]}
             showsVerticalScrollIndicator={false}
@@ -215,7 +227,19 @@ export function FeedScreen() {
               />
             }
             ListHeaderComponent={ListHeader}
-            ListEmptyComponent={<FeedEmptyState onCompose={goToCompose} />}
+            ListEmptyComponent={
+              selectedCategory !== "all" && allPosts.length > 0 ? (
+                <FilteredEmptyState
+                  categoryLabel={
+                    CATEGORY_OPTIONS.find((o) => o.value === selectedCategory)?.label ??
+                    selectedCategory
+                  }
+                  onClear={() => setSelectedCategory("all")}
+                />
+              ) : (
+                <FeedEmptyState onCompose={goToCompose} />
+              )
+            }
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             renderItem={({ item }) => (
               <FeedPostCard
@@ -235,7 +259,7 @@ export function FeedScreen() {
               styles.fab,
               {
                 backgroundColor: colors.primary,
-                bottom: spacing.md,
+                bottom: tabBarHeight + spacing.md,
                 shadowColor: colors.primary,
               },
               pressed && styles.fabPressed,
@@ -257,12 +281,20 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingTop: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   listEmpty: {
     flexGrow: 1,
   },
+  headerOutset: {
+    marginHorizontal: -spacing.md,
+  },
+  chipOutset: {
+    marginHorizontal: -spacing.md,
+  },
   chipRow: {
     gap: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
   },
   chip: {
@@ -280,7 +312,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: spacing.sm + 2,
-    paddingHorizontal: spacing.xs,
   },
   sectionTitle: {
     fontSize: 20,
