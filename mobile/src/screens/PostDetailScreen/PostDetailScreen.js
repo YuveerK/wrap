@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import MapView, { Marker } from "react-native-maps";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,6 +29,8 @@ import { SCREENS } from "@/navigation/params";
 import { useTheme } from "@/theme";
 import { spacing } from "@/theme/spacing";
 
+const H_PAD = spacing.md;
+
 export function PostDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -36,6 +39,7 @@ export function PostDetailScreen() {
   const id = Number(postId);
   const queryClient = useQueryClient();
   const { colors, semantic } = useTheme();
+  const tabBarHeight = useBottomTabBarHeight();
   const listBg = semantic.feedListBackground;
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -59,10 +63,7 @@ export function PostDetailScreen() {
           post: {
             ...old.post,
             likedByMe: liked,
-            likeCount: Math.max(
-              0,
-              (old.post.likeCount ?? 0) + (liked ? 1 : -1),
-            ),
+            likeCount: Math.max(0, (old.post.likeCount ?? 0) + (liked ? 1 : -1)),
           },
         };
       });
@@ -141,17 +142,31 @@ export function PostDetailScreen() {
   const avatarBg = getAvatarColor(seed);
   const bannerUri = resolveMediaUrl(post.bannerUrl);
   const liked = Boolean(post.likedByMe);
+  const isPinned = Boolean(post.pinned);
+  const category = post.category ?? post.kind;
 
   return (
-    <Screen edges={["top"]} padded={false} backgroundColor={listBg}>
+    <Screen edges={[]} padded={false} backgroundColor={listBg}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, { paddingBottom: tabBarHeight + spacing.md }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Full-bleed banner */}
         {bannerUri ? (
           <Image source={{ uri: bannerUri }} style={styles.banner} />
         ) : null}
 
+        {/* Pinned strip — correct §2.2 tint, consistent with card */}
+        {isPinned ? (
+          <View style={[styles.pinnedStrip, { backgroundColor: `${colors.primary}12` }]}>
+            <Ionicons name="pin" size={11} color={colors.primary} />
+            <Text style={[styles.pinnedLabel, { color: colors.primary }]}>
+              PINNED BY COMMITTEE
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Author row */}
         <View style={styles.authorRow}>
           <View style={[styles.avatarRing, { borderColor: `${avatarBg}50` }]}>
             <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
@@ -160,27 +175,39 @@ export function PostDetailScreen() {
               </Text>
             </View>
           </View>
-          <View>
-            <Text style={[styles.authorName, { color: colors.text }]}>
-              {name}
-            </Text>
-            <Text style={[styles.time, { color: colors.textMuted }]}>
+          <View style={styles.authorMeta}>
+            <Text style={[styles.authorName, { color: colors.text }]}>{name}</Text>
+            <Text style={[styles.timestamp, { color: colors.textMuted }]}>
               {formatRelativeTime(post.createdAt)}
             </Text>
           </View>
+          {category ? (
+            <Text style={[styles.categoryEyebrow, { color: colors.textMuted }]}>
+              {String(category).toUpperCase()}
+            </Text>
+          ) : null}
         </View>
 
-        {post.title ? (
-          <Text style={[styles.title, { color: colors.text }]}>{post.title}</Text>
-        ) : null}
-        <Text style={[styles.body, { color: semantic.postBodyText }]}>
-          {post.body}
-        </Text>
+        {/* Post content */}
+        <View style={styles.content}>
+          {post.title ? (
+            <Text style={[styles.title, { color: colors.text }]}>{post.title}</Text>
+          ) : null}
+          <Text style={[styles.body, { color: semantic.postBodyText }]}>
+            {post.body}
+          </Text>
+        </View>
 
+        {/* Image/file attachments */}
+        <PostAttachments attachments={post.attachments} />
+
+        {/* Location map */}
         {post.latitude != null && post.longitude != null ? (
           <Pressable
             onPress={openInMaps}
             style={[styles.locationWrap, { borderColor: colors.border }]}
+            accessibilityRole="button"
+            accessibilityLabel="Open location in Maps"
           >
             <MapView
               style={styles.locationMap}
@@ -196,7 +223,9 @@ export function PostDetailScreen() {
               pitchEnabled={false}
               pointerEvents="none"
             >
-              <Marker coordinate={{ latitude: post.latitude, longitude: post.longitude }} />
+              <Marker
+                coordinate={{ latitude: post.latitude, longitude: post.longitude }}
+              />
             </MapView>
             <View
               style={[styles.locationLabel, { backgroundColor: semantic.cardBackground }]}
@@ -206,76 +235,104 @@ export function PostDetailScreen() {
                 style={[styles.locationText, { color: colors.text }]}
                 numberOfLines={1}
               >
-                {post.addressText || `${post.latitude.toFixed(5)}, ${post.longitude.toFixed(5)}`}
+                {post.addressText ||
+                  `${post.latitude.toFixed(5)}, ${post.longitude.toFixed(5)}`}
               </Text>
               <Ionicons name="open-outline" size={13} color={colors.textMuted} />
             </View>
           </Pressable>
         ) : null}
 
-        <PostAttachments attachments={post.attachments} />
-
+        {/* Actions — single top+bottom hairline, airy padding */}
         <View
-          style={[styles.likeBar, { borderColor: semantic.footerDivider }]}
+          style={[
+            styles.actionsRow,
+            {
+              borderTopColor: semantic.footerDivider,
+              borderBottomColor: semantic.footerDivider,
+            },
+          ]}
         >
           <Pressable
-            style={styles.likeBtn}
+            hitSlop={10}
             onPress={() => likeMutation.mutate()}
             disabled={likeMutation.isPending}
+            style={[styles.actionBtn, { opacity: likeMutation.isPending ? 0.5 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel={liked ? "Unlike this post" : "Like this post"}
+            accessibilityState={{ selected: liked }}
           >
             <Ionicons
               name={liked ? "heart" : "heart-outline"}
               size={22}
               color={liked ? colors.primary : colors.textMuted}
             />
-            <Text
-              style={[
-                styles.likeLabel,
-                { color: liked ? colors.primary : colors.textMuted },
-              ]}
-            >
-              {post.likeCount ?? 0}
-            </Text>
+            {(post.likeCount ?? 0) > 0 ? (
+              <Text
+                style={[
+                  styles.actionCount,
+                  { color: liked ? colors.primary : colors.textMuted },
+                ]}
+              >
+                {post.likeCount}
+              </Text>
+            ) : null}
           </Pressable>
-          <Pressable style={styles.likeBtn} onPress={goToComment}>
-            <Ionicons
-              name="chatbubble-outline"
-              size={20}
-              color={colors.textMuted}
-            />
-            <Text style={[styles.likeLabel, { color: colors.textMuted }]}>
-              {post.commentCount ?? 0}
-            </Text>
+
+          <Pressable
+            hitSlop={10}
+            onPress={goToComment}
+            style={styles.actionBtn}
+            accessibilityRole="button"
+            accessibilityLabel={`${post.commentCount ?? 0} comments, add a comment`}
+          >
+            <Ionicons name="chatbubble-outline" size={20} color={colors.textMuted} />
+            {(post.commentCount ?? 0) > 0 ? (
+              <Text style={[styles.actionCount, { color: colors.textMuted }]}>
+                {post.commentCount}
+              </Text>
+            ) : null}
           </Pressable>
         </View>
 
-        <View style={styles.commentsHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Comments
-          </Text>
-          <Pressable onPress={goToComment} hitSlop={8}>
-            <Text style={[styles.addComment, { color: colors.primary }]}>
-              Add comment
+        {/* Comments */}
+        <View style={styles.commentsSection}>
+          <View style={styles.commentsHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Comments
             </Text>
-          </Pressable>
-        </View>
+            <Pressable onPress={goToComment} hitSlop={10}>
+              <Text style={[styles.addComment, { color: colors.primary }]}>
+                Add comment
+              </Text>
+            </Pressable>
+          </View>
 
-        {post.comments?.length ? (
-          post.comments.map((c) => (
-            <View key={c.id}>
-              <CommentItem comment={c} onReply={() => goToReply(c)} />
-              {c.replies?.map((r) => (
-                <CommentItem key={r.id} comment={r} isReply />
-              ))}
-            </View>
-          ))
-        ) : (
-          <Pressable onPress={goToComment} style={styles.emptyComments}>
-            <Text style={[styles.noComments, { color: colors.textMuted }]}>
-              No comments yet. Tap to start the conversation.
-            </Text>
-          </Pressable>
-        )}
+          <View style={styles.commentsList}>
+            {post.comments?.length ? (
+              post.comments.map((c) => (
+                <View key={c.id}>
+                  <CommentItem comment={c} onReply={() => goToReply(c)} />
+                  {c.replies?.map((r) => (
+                    <CommentItem key={r.id} comment={r} isReply />
+                  ))}
+                </View>
+              ))
+            ) : (
+              <Pressable
+                onPress={goToComment}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Add the first comment"
+                style={styles.emptyComments}
+              >
+                <Text style={[styles.noComments, { color: colors.textMuted }]}>
+                  No comments yet. Tap to start the conversation.
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
       </ScrollView>
     </Screen>
   );
@@ -283,17 +340,32 @@ export function PostDetailScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingBottom: spacing.xl,
+    // paddingBottom set dynamically via tabBarHeight
   },
   banner: {
     width: "100%",
-    height: 200,
+    height: 220,
+  },
+  pinnedStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: H_PAD,
+    paddingVertical: 7,
+  },
+  pinnedLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   authorRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    padding: spacing.md,
+    paddingHorizontal: H_PAD,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   avatarRing: {
     width: 50,
@@ -314,30 +386,45 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  authorMeta: {
+    flex: 1,
+    gap: 3,
   },
   authorName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
+    letterSpacing: -0.1,
   },
-  time: {
-    fontSize: 13,
+  timestamp: {
+    fontSize: 12.5,
+    fontWeight: "500",
+  },
+  categoryEyebrow: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  content: {
+    paddingHorizontal: H_PAD,
+    gap: spacing.sm,
   },
   title: {
-    fontSize: 22,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
+    fontSize: 24,
+    fontWeight: "700",
+    letterSpacing: -0.4,
   },
   body: {
-    fontSize: 16,
-    lineHeight: 24,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    fontSize: 15,
+    fontWeight: "400",
+    letterSpacing: 0.1,
+    lineHeight: 23,
   },
   locationWrap: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    marginHorizontal: H_PAD,
+    marginTop: spacing.md,
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
@@ -348,39 +435,44 @@ const styles = StyleSheet.create({
   locationLabel: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    gap: spacing.xs + 2,
+    paddingHorizontal: spacing.md - 4,
+    paddingVertical: spacing.sm,
   },
   locationText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: "500",
   },
-  likeBar: {
+  actionsRow: {
     flexDirection: "row",
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
-    gap: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: H_PAD,
+    paddingVertical: spacing.sm + 2,
+    marginTop: spacing.md,
+    gap: spacing.sm,
   },
-  likeBtn: {
+  actionBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
-    padding: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
-  likeLabel: {
-    fontSize: 15,
-    fontWeight: "600",
+  actionCount: {
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  commentsSection: {
+    paddingTop: spacing.md,
   },
   commentsHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: H_PAD,
     marginBottom: spacing.sm,
   },
   sectionTitle: {
@@ -392,8 +484,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
+  commentsList: {
+    paddingHorizontal: H_PAD,
+  },
   emptyComments: {
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   noComments: {
     fontSize: 15,
