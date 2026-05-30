@@ -1,6 +1,7 @@
 import { IssueStatus } from "@prisma/client";
 import * as issuesRepo from "./issues.repository.js";
-import { ConflictError, NotFoundError } from "../../libraries/errors.js";
+import { AppError, ConflictError, ForbiddenError, NotFoundError } from "../../libraries/errors.js";
+import { isAllowedSuburb } from "../../libraries/suburbs.js";
 import { sendPushNotifications } from "../notifications/notifications.service.js";
 
 export async function listIssues(userId, filters) {
@@ -10,10 +11,18 @@ export async function listIssues(userId, filters) {
 export async function getIssueById(userId, issueId) {
   const issue = await issuesRepo.findIssueById(issueId);
   if (!issue) throw new NotFoundError("Issue");
-  return issue;
+  const watch = await issuesRepo.findWatch(issueId, userId);
+  return { ...issue, watchedByMe: Boolean(watch) };
 }
 
 export async function createIssue(userId, input) {
+  if (input.suburb && !isAllowedSuburb(input.suburb)) {
+    throw new AppError(`${input.suburb} is outside the WJRA service area.`, {
+      status: 422,
+      code: "SUBURB_NOT_ALLOWED",
+    });
+  }
+
   const issue = await issuesRepo.createIssue({
     reporterId: userId,
     category: input.category,
@@ -64,13 +73,9 @@ export async function addIssueUpdate(userId, issueId, { status, note }) {
 
   const updated = await issuesRepo.findIssueById(issueId);
 
-  if (statusChanged && issue.reporter.id !== userId) {
+  if (statusChanged) {
     const label = status.replace(/_/g, " ").toLowerCase();
-    sendPushNotifications([issue.reporter.id], {
-      title: "Issue update on Wrap",
-      body: `Your report is now ${label}`,
-      data: { screen: "IssueDetail", id: issueId },
-    }).catch(() => {});
+    await _notifyWatchers(issueId, userId, issue, label);
   }
 
   return updated;
@@ -89,14 +94,59 @@ export async function updateIssueStatus(userId, issueId, { status, note }) {
 
   const updated = await issuesRepo.findIssueById(issueId);
 
-  if (issue.reporter.id !== userId) {
-    const label = status.replace(/_/g, " ").toLowerCase();
-    sendPushNotifications([issue.reporter.id], {
-      title: "Issue update on Wrap",
-      body: `Your report is now ${label}`,
-      data: { screen: "IssueDetail", id: issueId },
-    }).catch(() => {});
-  }
+  const label = status.replace(/_/g, " ").toLowerCase();
+  await _notifyWatchers(issueId, userId, issue, label);
 
   return updated;
+}
+
+export async function reporterUpdateStatus(userId, issueId, { status }) {
+  const issue = await getIssueById(userId, issueId);
+  if (issue.reporter.id !== userId) {
+    throw new ForbiddenError("Only the reporter can update this issue's status");
+  }
+  await issuesRepo.updateIssueStatus(issueId, status);
+  await issuesRepo.createIssueUpdate({
+    issueId,
+    authorId: userId,
+    status,
+    note: `Reporter marked as ${status.replace(/_/g, " ").toLowerCase()}`,
+  });
+  const label = status.replace(/_/g, " ").toLowerCase();
+  await _notifyWatchers(issueId, userId, issue, label);
+  return getIssueById(userId, issueId);
+}
+
+export async function watchIssue(userId, issueId) {
+  await getIssueById(userId, issueId);
+  const existing = await issuesRepo.findWatch(issueId, userId);
+  if (existing) throw new ConflictError("Already watching this issue");
+  await issuesRepo.addWatch(issueId, userId);
+  return getIssueById(userId, issueId);
+}
+
+export async function unwatchIssue(userId, issueId) {
+  await getIssueById(userId, issueId);
+  const existing = await issuesRepo.findWatch(issueId, userId);
+  if (!existing) throw new ConflictError("Not watching this issue");
+  await issuesRepo.removeWatch(issueId, userId);
+  return getIssueById(userId, issueId);
+}
+
+// Sends a status-change push to all watchers + the reporter, excluding the
+// user who made the update (they already know what they did).
+async function _notifyWatchers(issueId, updaterUserId, issue, label) {
+  const watcherIds = await issuesRepo.getWatcherIds(issueId);
+  const recipientSet = new Set(watcherIds);
+  recipientSet.add(issue.reporter.id);
+  recipientSet.delete(updaterUserId);
+  const recipients = [...recipientSet];
+  if (recipients.length === 0) return;
+  const shortTitle =
+    issue.title.length > 50 ? `${issue.title.slice(0, 50)}…` : issue.title;
+  sendPushNotifications(recipients, {
+    title: "Issue update",
+    body: `"${shortTitle}" is now ${label}`,
+    data: { screen: "IssueDetail", id: issueId },
+  }).catch(() => {});
 }

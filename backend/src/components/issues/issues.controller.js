@@ -53,3 +53,34 @@ export async function updateIssueStatus(req, res, next) {
     next(err);
   }
 }
+
+export async function reporterUpdateStatus(req, res, next) {
+  try {
+    const issue = await issuesService.reporterUpdateStatus(
+      req.user.sub,
+      Number(req.params.id),
+      req.body,
+    );
+    res.json({ issue });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function watchIssue(req, res, next) {
+  try {
+    const issue = await issuesService.watchIssue(req.user.sub, Number(req.params.id));
+    res.json({ issue });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function unwatchIssue(req, res, next) {
+  try {
+    const issue = await issuesService.unwatchIssue(req.user.sub, Number(req.params.id));
+    res.json({ issue });
+  } catch (err) {
+    next(err);
+  }
+}

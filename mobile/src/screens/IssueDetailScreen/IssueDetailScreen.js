@@ -1,4 +1,5 @@
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,6 +15,8 @@ import {
   categoryIcons,
   categoryLabels,
   hexAlpha,
+  ISSUE_STATUSES,
+  statusLabels,
   statusMeta,
 } from "@/lib/issues";
 import {
@@ -44,11 +47,44 @@ export function IssueDetailScreen() {
 
   const issue = data?.issue;
 
+  const [selectedStatus, setSelectedStatus] = useState(null);
+
   const supportMutation = useMutation({
     mutationFn: () => issuesApi.supportIssue(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["issue", id] });
       await queryClient.invalidateQueries({ queryKey: ["issues"] });
+    },
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: (status) => issuesApi.reporterUpdateIssueStatus(id, { status }),
+    onSuccess: () => {
+      setSelectedStatus(null);
+      queryClient.invalidateQueries({ queryKey: ["issue", id] });
+      queryClient.invalidateQueries({ queryKey: ["issues"] });
+    },
+  });
+
+  const watchMutation = useMutation({
+    mutationFn: () =>
+      issue?.watchedByMe ? issuesApi.unwatchIssue(id) : issuesApi.watchIssue(id),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["issue", id] });
+      const previous = queryClient.getQueryData(["issue", id]);
+      queryClient.setQueryData(["issue", id], (old) => {
+        if (!old?.issue) return old;
+        return { ...old, issue: { ...old.issue, watchedByMe: !old.issue.watchedByMe } };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["issue", id], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["issue", id] });
     },
   });
 
@@ -147,11 +183,14 @@ export function IssueDetailScreen() {
           </View>
         </View>
 
-        {/* Support / Comment row */}
+        {/* Support / Watch row */}
         <View style={styles.reactionRow}>
           <Pressable
             onPress={() => supportMutation.mutate()}
             disabled={supportMutation.isPending}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={`Support this issue · ${issue.supportCount ?? 0} supporters`}
             style={[
               styles.reactionBtn,
               styles.reactionBtnPrimary,
@@ -165,14 +204,36 @@ export function IssueDetailScreen() {
           </Pressable>
 
           <Pressable
+            onPress={() => watchMutation.mutate()}
+            disabled={watchMutation.isPending}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={issue.watchedByMe ? "Stop watching this issue" : "Watch this issue for updates"}
+            accessibilityState={{ selected: Boolean(issue.watchedByMe) }}
             style={[
               styles.reactionBtn,
-              { borderWidth: 1, borderColor: colors.border },
+              {
+                borderWidth: 1,
+                borderColor: issue.watchedByMe ? colors.primary : colors.border,
+                backgroundColor: issue.watchedByMe
+                  ? hexAlpha(colors.primary, 0.08)
+                  : "transparent",
+                opacity: watchMutation.isPending ? 0.6 : 1,
+              },
             ]}
           >
-            <Ionicons name="chatbubble-outline" size={16} color={colors.text} />
-            <Text style={[styles.reactionLabel, { color: colors.text }]}>
-              {`${issue.commentCount ?? 0} comments`}
+            <Ionicons
+              name={issue.watchedByMe ? "notifications" : "notifications-outline"}
+              size={16}
+              color={issue.watchedByMe ? colors.primary : colors.text}
+            />
+            <Text
+              style={[
+                styles.reactionLabel,
+                { color: issue.watchedByMe ? colors.primary : colors.text },
+              ]}
+            >
+              {issue.watchedByMe ? "Watching" : "Watch"}
             </Text>
           </Pressable>
         </View>
@@ -184,6 +245,74 @@ export function IssueDetailScreen() {
             updates={issue.updates}
           />
         </View>
+
+        {/* Reporter-only status picker */}
+        {issue.reporter.id === user?.id ? (
+          <View style={[styles.statusCardShadow, { shadowColor, backgroundColor: cardBg }]}>
+            <View style={[styles.statusCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.statusEyebrow, { color: colors.textMuted }]}>
+                UPDATE STATUS
+              </Text>
+              <View style={styles.statusChips}>
+                {ISSUE_STATUSES.filter((s) => s !== issue.status).map((s) => {
+                  const m = statusMeta[s];
+                  const active = selectedStatus === s;
+                  return (
+                    <Pressable
+                      key={s}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set status to ${statusLabels[s]}`}
+                      accessibilityState={{ selected: active }}
+                      onPress={() => setSelectedStatus(active ? null : s)}
+                      style={({ pressed }) => [
+                        styles.statusChip,
+                        {
+                          backgroundColor: active
+                            ? hexAlpha(m.fg, 0.14)
+                            : colors.surface,
+                          borderColor: active ? m.fg : colors.border,
+                          opacity: pressed ? 0.75 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusChipText,
+                          { color: active ? m.fg : colors.textMuted },
+                        ]}
+                      >
+                        {statusLabels[s]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {selectedStatus ? (
+                <Pressable
+                  onPress={() => statusMutation.mutate(selectedStatus)}
+                  disabled={statusMutation.isPending}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Mark as ${statusLabels[selectedStatus]}`}
+                  style={[
+                    styles.updateBtn,
+                    {
+                      backgroundColor: statusMeta[selectedStatus].fg,
+                      opacity: statusMutation.isPending ? 0.6 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={styles.updateBtnText}>
+                    {statusMutation.isPending
+                      ? "Updating…"
+                      : `Mark as ${statusLabels[selectedStatus]}`}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -289,5 +418,56 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 3 },
     }),
+  },
+  statusCardShadow: {
+    borderRadius: 22,
+    marginHorizontal: H_PAD,
+    marginBottom: spacing.xl,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.07,
+        shadowRadius: 20,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  statusCard: {
+    borderRadius: 22,
+    overflow: "hidden",
+    padding: H_PAD,
+    gap: spacing.md,
+  },
+  statusEyebrow: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  statusChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  statusChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  statusChipText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  updateBtn: {
+    borderRadius: 999,
+    paddingVertical: spacing.sm + 2,
+    alignItems: "center",
+  },
+  updateBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: -0.2,
   },
 });

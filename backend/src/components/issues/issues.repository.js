@@ -78,3 +78,27 @@ export async function incrementSupportCount(issueId) {
     select: { supportCount: true },
   });
 }
+
+export async function addWatch(issueId, userId) {
+  return await prisma.issueWatch.create({ data: { issueId, userId } });
+}
+
+export async function removeWatch(issueId, userId) {
+  return await prisma.issueWatch.delete({
+    where: { issueId_userId: { issueId, userId } },
+  });
+}
+
+export async function findWatch(issueId, userId) {
+  return await prisma.issueWatch.findUnique({
+    where: { issueId_userId: { issueId, userId } },
+  });
+}
+
+export async function getWatcherIds(issueId) {
+  const watches = await prisma.issueWatch.findMany({
+    where: { issueId },
+    select: { userId: true },
+  });
+  return watches.map((w) => w.userId);
+}

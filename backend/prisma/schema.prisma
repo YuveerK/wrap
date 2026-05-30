@@ -61,6 +61,7 @@ model User {
   issuesReported Issue[]        @relation("IssueReporter")
   issueUpdates   IssueUpdate[]
   issueSupports  IssueSupport[]
+  issueWatches   IssueWatch[]
   posts          Post[]
   postLikes      PostLike[]
   postComments   PostComment[]
@@ -98,6 +99,7 @@ model Issue {
 
   updates  IssueUpdate[]
   supports IssueSupport[]
+  watches  IssueWatch[]
 
   @@index([status])
   @@index([createdAt])
@@ -126,6 +128,17 @@ model IssueSupport {
   createdAt DateTime @default(now())
 
   @@id([issueId, userId])
+}
+
+model IssueWatch {
+  issueId   Int
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([issueId, userId])
+  @@index([issueId])
 }
 
 model Post {

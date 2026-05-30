@@ -10,6 +10,7 @@ export const createIssueSchema = z.object({
   addressText: z.string().max(200).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  suburb: z.string().max(100).optional(),
 });
 
 export const listIssuesQuerySchema = z.object({

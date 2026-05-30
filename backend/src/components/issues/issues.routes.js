@@ -26,6 +26,8 @@ router.get("/", validateQuery(listIssuesQuerySchema), issuesController.listIssue
 router.get("/:id", issuesController.getIssue);
 router.post("/", writeLimiter, validateBody(createIssueSchema), issuesController.createIssue);
 router.post("/:id/support", writeLimiter, issuesController.supportIssue);
+router.post("/:id/watch", writeLimiter, issuesController.watchIssue);
+router.delete("/:id/watch", writeLimiter, issuesController.unwatchIssue);
 router.post(
   "/:id/updates",
   writeLimiter,
@@ -39,6 +41,12 @@ router.patch(
   authorize("COMMITTEE", "ADMIN"),
   validateBody(updateIssueStatusSchema),
   issuesController.updateIssueStatus,
+);
+router.patch(
+  "/:id/reporter-status",
+  writeLimiter,
+  validateBody(updateIssueStatusSchema),
+  issuesController.reporterUpdateStatus,
 );
 
 export default router;

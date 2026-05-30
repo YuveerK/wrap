@@ -27,3 +27,9 @@ export class ConflictError extends AppError {
     super(message, { status: 409, code: "CONFLICT" });
   }
 }
+
+export class ForbiddenError extends AppError {
+  constructor(message = "Forbidden") {
+    super(message, { status: 403, code: "FORBIDDEN" });
+  }
+}

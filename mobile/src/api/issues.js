@@ -31,3 +31,18 @@ export async function supportIssue(id) {
 export async function updateIssueStatus(id, body) {
   return apiClient.patch(`/issues/${id}/status`, body);
 }
+
+/** @param {number} id @param {{ status: string }} body */
+export async function reporterUpdateIssueStatus(id, body) {
+  return apiClient.patch(`/issues/${id}/reporter-status`, body);
+}
+
+/** @param {number} id */
+export async function watchIssue(id) {
+  return apiClient.post(`/issues/${id}/watch`);
+}
+
+/** @param {number} id */
+export async function unwatchIssue(id) {
+  return apiClient.delete(`/issues/${id}/watch`);
+}
